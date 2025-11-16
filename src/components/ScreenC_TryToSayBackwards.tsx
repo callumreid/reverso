@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { MicButton } from "@/components/MicButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
 import { WaveformVisualizer } from "@/components/WaveformVisualizer";
@@ -10,6 +10,7 @@ import { useGameContext } from "@/hooks/useGameContext";
 import { useScratchSfx } from "@/hooks/useScratchSfx";
 import { useWaveformAnalyzer } from "@/hooks/useWaveformAnalyzer";
 import { useSpacebarToggle } from "@/hooks/useSpacebarToggle";
+import { useSharedAudioContext } from "@/hooks/useSharedAudioContext";
 import { formatDuration } from "@/utils/formatDuration";
 
 export function ScreenC() {
@@ -17,16 +18,7 @@ export function ScreenC() {
   const { waveform, attach, detach, isActive } = useWaveformAnalyzer();
   const { reverse } = useAudioReversal();
   const { play: playScratch } = useScratchSfx();
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-  }, []);
+  const audioContext = useSharedAudioContext();
 
   const handleRecordingReady = useCallback(
     async (result: { audioBuffer: AudioBuffer; durationMs: number; createdAt: number }) => {
@@ -71,11 +63,11 @@ export function ScreenC() {
 
   const audioRecordingOptions = useMemo(
     () => ({
-      audioContext: audioContextRef.current ?? undefined,
+      audioContext: audioContext ?? undefined,
       onRecordingReady: handleRecordingReady,
       onStreamAvailable: handleStreamAvailable,
     }),
-    [handleRecordingReady, handleStreamAvailable],
+    [audioContext, handleRecordingReady, handleStreamAvailable],
   );
 
   const {
