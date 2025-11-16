@@ -9,6 +9,13 @@ interface AudioContextWindow extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
+interface ExtendedNavigator extends Navigator {
+  userAgentData?: {
+    mobile?: boolean;
+    platform?: string;
+  };
+}
+
 export interface PlayOptions {
   volume?: number;
   playbackRate?: number;
@@ -27,6 +34,29 @@ export function useAudioPlayback() {
   const gainRef = useRef<GainNode | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+
+  const determineShouldUseHtmlAudio = useCallback(() => {
+    if (typeof navigator === "undefined") {
+      return false;
+    }
+    const nav = navigator as ExtendedNavigator;
+    if (typeof nav.userAgentData?.mobile === "boolean") {
+      return nav.userAgentData.mobile;
+    }
+    const ua = nav.userAgent.toLowerCase();
+    const platform = (nav.platform ?? "").toLowerCase();
+    const touchPoints =
+      typeof nav.maxTouchPoints === "number" ? nav.maxTouchPoints : 0;
+    const isIOS =
+      ua.includes("iphone") ||
+      ua.includes("ipad") ||
+      ua.includes("ipod") ||
+      platform.includes("iphone") ||
+      platform.includes("ipad") ||
+      platform.includes("ipod");
+    const isAndroid = ua.includes("android");
+    return isIOS || isAndroid || touchPoints > 1;
+  }, []);
 
   const getAudioContext = useCallback(async () => {
     if (typeof window === "undefined") {
@@ -114,11 +144,18 @@ export function useAudioPlayback() {
         objectUrlRef.current = url;
 
         if (!audioElementRef.current) {
-          audioElementRef.current = new Audio();
+          const element = new Audio();
+          element.preload = "auto";
+          element.crossOrigin = "anonymous";
+          element.setAttribute("playsinline", "true");
+          element.setAttribute("webkit-playsinline", "true");
+          audioElementRef.current = element;
         }
 
         const audio = audioElementRef.current;
+        audio.pause();
         audio.src = url;
+        audio.currentTime = 0;
         audio.volume = options.volume ?? 1;
         audio.playbackRate = options.playbackRate ?? 1;
 
@@ -142,11 +179,13 @@ export function useAudioPlayback() {
 
         await audio.play();
         setIsPlaying(true);
+        return true;
       } catch (fallbackError) {
         console.error("Fallback playback failed:", fallbackError);
         setError("Unable to play audio on this device.");
         setIsPlaying(false);
         logError("Fallback audio playback failed", fallbackError);
+        return false;
       }
     },
     [],
@@ -162,12 +201,25 @@ export function useAudioPlayback() {
           throw new Error("Audio buffer is empty or invalid");
         }
 
-        const webAudioSuccess = await playWithWebAudio(buffer, options);
-        if (webAudioSuccess) {
-          return;
-        }
+        const preferHtmlAudio = determineShouldUseHtmlAudio();
+        const attempts: Array<"html" | "webaudio"> = preferHtmlAudio
+          ? ["html", "webaudio", "html"]
+          : ["webaudio", "html"];
 
-        await playWithFallback(buffer, options);
+        for (const attempt of attempts) {
+          if (attempt === "html") {
+            const success = await playWithFallback(buffer, options);
+            if (success) {
+              return;
+            }
+            continue;
+          }
+          const success = await playWithWebAudio(buffer, options);
+          if (success) {
+            return;
+          }
+        }
+        throw new Error("Unable to play audio on this device.");
       } catch (playError) {
         const message =
           playError instanceof Error ? playError.message : "Unable to play audio.";
@@ -176,7 +228,7 @@ export function useAudioPlayback() {
         logError("Playback failed", playError);
       }
     },
-    [stop, playWithWebAudio, playWithFallback],
+    [stop, playWithWebAudio, playWithFallback, determineShouldUseHtmlAudio],
   );
 
   const setVolume = useCallback((value: number) => {

@@ -1,7 +1,7 @@
 # Mobile Audio Playback Bug - Critical Issue
 
 ## Summary
-Audio playback was completely broken on mobile (iOS Safari and Chrome incognito). Recording worked perfectly and playback worked on desktop, but mobile devices produced no sound. Playback has now been fixed by generating a standards-compliant WAV blob for the HTMLAudioElement fallback and tightening shared AudioContext handling.
+Audio playback was completely broken on mobile (iOS Safari and Chrome incognito). Recording worked perfectly and playback worked on desktop, but mobile devices produced no sound. Playback has now been fixed by generating a standards-compliant WAV blob for the HTMLAudioElement fallback, preferring the element path on mobile/touch devices, and tightening shared AudioContext handling.
 
 ## Symptoms
 - User records audio successfully on mobile (mic indicator appears, recording duration increments)
@@ -32,6 +32,7 @@ Key fixes:
 1. Convert `AudioBuffer` to a valid PCM WAV using `audioBufferToWavBlob`.
 2. Reuse a single off-DOM `HTMLAudioElement`, revoking object URLs between plays.
 3. Harden shared AudioContext creation/resume logic without ref reads during render.
+4. Detect touch/mobile agents and prioritize HTMLAudioElement playback before attempting Web Audio.
 
 Attempted solutions that didn't work:
 
@@ -60,52 +61,39 @@ Attempted solutions that didn't work:
 Location: `src/hooks/useAudioPlayback.ts`
 
 The playback hook now implements:
-1. Web Audio API attempt first (with suspended context check)
-2. Fallback to HTMLAudioElement with WAV conversion
-3. Error handlers on both paths
-4. Console logging at each step
+1. Touch/mobile detection to prioritize HTML element playback.
+2. Web Audio API attempt with suspended context handling.
+3. HTMLAudioElement path with RIFF WAV conversion, object URL lifecycle, and inline attributes.
+4. Error handlers and logging on both paths.
 
-```105:151:src/hooks/useAudioPlayback.ts
-const wavBlob = audioBufferToWavBlob(buffer);
-const url = URL.createObjectURL(wavBlob);
-objectUrlRef.current = url;
+```105:178:src/hooks/useAudioPlayback.ts
+const preferHtmlAudio = determineShouldUseHtmlAudio();
+const attempts: Array<"html" | "webaudio"> = preferHtmlAudio
+  ? ["html", "webaudio", "html"]
+  : ["webaudio", "html"];
 
-if (!audioElementRef.current) {
-  audioElementRef.current = new Audio();
+for (const attempt of attempts) {
+  if (attempt === "html") {
+    const success = await playWithFallback(buffer, options);
+    if (success) {
+      return;
+    }
+    continue;
+  }
+  const success = await playWithWebAudio(buffer, options);
+  if (success) {
+    return;
+  }
 }
 
-const audio = audioElementRef.current;
-audio.src = url;
-audio.volume = options.volume ?? 1;
-audio.playbackRate = options.playbackRate ?? 1;
-
-audio.onended = () => {
-  setIsPlaying(false);
-  options.onEnded?.();
-  if (objectUrlRef.current) {
-    URL.revokeObjectURL(objectUrlRef.current);
-    objectUrlRef.current = null;
-  }
-};
-
-audio.onerror = () => {
-  setError("Audio playback error");
-  setIsPlaying(false);
-  if (objectUrlRef.current) {
-    URL.revokeObjectURL(objectUrlRef.current);
-    objectUrlRef.current = null;
-  }
-};
-
-await audio.play();
-setIsPlaying(true);
+throw new Error("Unable to play audio on this device.");
 ```
 
 ## Playback Flow
-1. `ScreenB_ListenBackwards.tsx` calls `play(audioBuffer)`
-2. `useAudioPlayback.play()` first tries Web Audio API
-3. If that fails, attempts HTMLAudioElement fallback
-4. Both have error handlers that should surface issues
+1. `ScreenB_ListenBackwards.tsx` calls `play(audioBuffer)`.
+2. `useAudioPlayback.play()` chooses HTMLAudioElement first on mobile/touch agents; otherwise it starts with Web Audio.
+3. If the preferred path fails, the hook automatically retries the alternative.
+4. Both paths surface errors and clean up resources.
 
 ## Verification
 - `npm run lint`
