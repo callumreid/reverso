@@ -1,37 +1,49 @@
 # Reverso
 
-Reverso is a mobile-first, pass-and-play party game where players record phrases, listen to them backwards, and try to mimic what they heard. The MVP focuses on:
-- Rapid local gameplay with four core screens (Say Phrase → Listen Backwards → Try Backwards → Results)
-- Audio capture, reversal, playback, and scoring powered by WebAudio + OpenAI Whisper
-- Retro/glitch aesthetic with responsive UI optimized for touch interactions
+Reverso is a retro-styled, pass-and-play party game where players record phrases, listen to them backwards, and try to mimic what they heard. The reversed attempt is transcribed with OpenAI Whisper, compared against the original transcription, and scored from 0–100.
+
+## Features
+- Press-and-hold microphone capture with live waveform visuals
+- Automatic reversal of recordings plus scratch SFX transitions between phases
+- Guided flow across four screens: Say Phrase → Listen Backwards → Try Backwards → Results
+- Whisper transcription + Levenshtein scoring, surfaced with clip-by-clip playback controls
+- Built with Next.js App Router, TypeScript, Tailwind, and Web Audio APIs
 
 ## Technical Design Reference
-- Full specification: [`docs/TECHNICAL_DESIGN.md`](docs/TECHNICAL_DESIGN.md)
-- Implementation roadmap: see the per-phase plans in [`docs/`](docs)
+- Full spec: [`docs/TECHNICAL_DESIGN.md`](docs/TECHNICAL_DESIGN.md)
+- Phase plans + progress logs: [`docs/`](docs)
 
 ## Getting Started
 1. Install dependencies: `pnpm install`
 2. Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY`
-3. Run the dev server: `pnpm dev`
+3. Start the dev server: `pnpm dev`
 4. Visit `http://localhost:3000`
 
+## Environment Variables
+| Name | Description |
+| --- | --- |
+| `OPENAI_API_KEY` | Required for `/api/transcribe` to proxy Whisper requests |
+
 ## Scripts
-- `pnpm dev` – Next.js dev server
-- `pnpm build` – Production build
-- `pnpm start` – Start production server (after build)
-- `pnpm lint` – ESLint
+| Script | Description |
+| --- | --- |
+| `pnpm dev` | Run Next.js in development mode |
+| `pnpm build` | Create a production build |
+| `pnpm start` | Serve the production build |
+| `pnpm lint` | Run ESLint over the codebase |
 
 ## Project Structure
 ```
 src/
-├── app/            # Next.js App Router entry
-├── assets/         # Static audio + media
-├── components/     # Shared UI components
-├── context/        # Game context + providers
-├── hooks/          # Audio + game hooks
-├── styles/         # Global styles/theme assets
-├── types/          # Shared TypeScript types
-└── utils/          # Audio + API utilities
+├── app/                # Next.js App Router entry + API routes
+├── assets/             # Static audio/media placements
+├── components/         # Shared UI + screen components
+├── context/            # Game context + provider
+├── hooks/              # Audio + game-specific hooks
+├── types/              # Shared TypeScript types
+├── utils/              # Audio helpers, API clients, formatting
+└── styles/             # Theme extensions and global CSS
 ```
 
-Additional design notes, scope decisions, and future phases live in the [`docs/`](docs) directory.
+## Deployment
+The app targets Vercel. Configure the project in the Vercel dashboard, add `OPENAI_API_KEY` to the Production environment, and deploy the `main` branch. The default build command (`pnpm run build`) and output directory (`.next`) work out of the box.
