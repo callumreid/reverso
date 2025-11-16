@@ -27,7 +27,12 @@ export function useAudioPlayback() {
       audioContextRef.current = new AudioContext();
     }
     if (audioContextRef.current.state === "suspended") {
-      await audioContextRef.current.resume();
+      try {
+        await audioContextRef.current.resume();
+      } catch (resumeError) {
+        logError("Failed to resume AudioContext", resumeError);
+        throw new Error("Audio context could not be resumed. Try tapping the play button.");
+      }
     }
     return audioContextRef.current;
   }, []);
@@ -47,12 +52,19 @@ export function useAudioPlayback() {
         setError(null);
         stop();
         const context = await getAudioContext();
+        if (!buffer || buffer.length === 0) {
+          throw new Error("Audio buffer is empty or invalid");
+        }
         const source = context.createBufferSource();
         const gainNode = context.createGain();
         source.buffer = buffer;
         source.playbackRate.value = options.playbackRate ?? 1;
         gainNode.gain.value = options.volume ?? 1;
         source.connect(gainNode).connect(context.destination);
+        source.onerror = () => {
+          setIsPlaying(false);
+          setError("Audio playback error");
+        };
         source.onended = () => {
           setIsPlaying(false);
           options.onEnded?.();
@@ -67,7 +79,6 @@ export function useAudioPlayback() {
         setError(message);
         setIsPlaying(false);
         logError("Playback failed", playError);
-        throw playError;
       }
     },
     [getAudioContext, stop],

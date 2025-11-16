@@ -8,7 +8,7 @@ import { useGameContext } from "@/hooks/useGameContext";
 
 export function ScreenB() {
   const { state, goToScreen } = useGameContext();
-  const { play, stop, isPlaying } = useAudioPlayback();
+  const { play, stop, isPlaying, error } = useAudioPlayback();
 
   const handlePlay = useCallback(() => {
     if (!state.originalBackwardsBuffer) {
@@ -53,8 +53,13 @@ export function ScreenB() {
           isActive={isPlaying}
           disabled={!state.originalBackwardsBuffer}
         />
+        {error ? (
+          <p className="rounded-2xl border border-[#ff5f87] bg-[#2a001a] px-4 py-3 text-sm text-[#ffb3c1]">
+            {error}
+          </p>
+        ) : null}
         <p className="text-center text-base text-[#f8f7ff]">
-          Pass the device to the next player once they’re confident they can mimic what they heard.
+          Pass the device to the next player once they're confident they can mimic what they heard.
         </p>
       </div>
     </ScreenFrame>
