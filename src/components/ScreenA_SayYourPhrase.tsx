@@ -58,6 +58,14 @@ export function ScreenA() {
     [attach, detach],
   );
 
+  const audioRecordingOptions = useMemo(
+    () => ({
+      onRecordingReady: handleRecordingReady,
+      onStreamAvailable: handleStreamAvailable,
+    }),
+    [handleRecordingReady, handleStreamAvailable],
+  );
+
   const {
     status,
     error,
@@ -67,10 +75,7 @@ export function ScreenA() {
     requestPermission,
     startRecording,
     stopRecording,
-  } = useAudioRecording({
-    onRecordingReady: handleRecordingReady,
-    onStreamAvailable: handleStreamAvailable,
-  });
+  } = useAudioRecording(audioRecordingOptions);
 
   useEffect(() => {
     dispatch({

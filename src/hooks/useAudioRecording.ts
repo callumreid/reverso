@@ -161,16 +161,12 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
   }, []);
 
   const stopRecording = useCallback(() => {
-    console.log("[useAudioRecording] stopRecording called, status:", status);
     if (!mediaRecorderRef.current) {
-      console.log("[useAudioRecording] No media recorder");
       return Promise.resolve<RecordingResult | null>(null);
     }
     if (status !== "recording" && status !== "requesting") {
-      console.log("[useAudioRecording] Status is neither recording nor requesting, it's:", status);
       return Promise.resolve<RecordingResult | null>(null);
     }
-    console.log("[useAudioRecording] Actually stopping");
     setStatus("stopping");
     return new Promise<RecordingResult | null>((resolve, reject) => {
       stopResolveRef.current = resolve;
@@ -193,6 +189,7 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       const stream = await navigator.mediaDevices.getUserMedia(
         RECORDING_CONSTRAINTS,
       );
+      console.log("[useAudioRecording] Got stream:", stream.getTracks().length, "tracks");
       streamRef.current = stream;
       options.onStreamAvailable?.(stream);
       const recorder = new MediaRecorder(stream, MEDIA_RECORDER_OPTIONS);
