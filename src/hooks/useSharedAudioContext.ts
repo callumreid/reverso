@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+
+interface AudioContextWindow extends Window {
+  AudioContext?: typeof AudioContext;
+  webkitAudioContext?: typeof AudioContext;
+}
 
 let sharedAudioContext: AudioContext | null = null;
 
@@ -9,7 +14,7 @@ let sharedAudioContext: AudioContext | null = null;
  * This ensures recording and playback use the same context.
  */
 export function useSharedAudioContext(): AudioContext | null {
-  const contextRef = useRef<AudioContext | null>(null);
+  const [context, setContext] = useState<AudioContext | null>(() => sharedAudioContext);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -17,31 +22,34 @@ export function useSharedAudioContext(): AudioContext | null {
     }
 
     if (!sharedAudioContext) {
+      const audioWindow = window as AudioContextWindow;
+      const AudioContextCtor =
+        audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+      if (!AudioContextCtor) {
+        console.error("Web Audio API is not supported in this environment.");
+        return;
+      }
       try {
-        sharedAudioContext = new AudioContext();
+        sharedAudioContext = new AudioContextCtor();
       } catch (error) {
         console.error("Failed to create AudioContext:", error);
         return;
       }
     }
 
-    contextRef.current = sharedAudioContext;
+    Promise.resolve().then(() => {
+      setContext(sharedAudioContext);
+    });
 
-    if (sharedAudioContext.state === "suspended") {
-      const resumeContext = async () => {
-        try {
-          await sharedAudioContext!.resume();
-        } catch (error) {
+    if (sharedAudioContext?.state === "suspended") {
+      sharedAudioContext
+        .resume()
+        .catch((error) => {
           console.error("Failed to resume AudioContext:", error);
-        }
-      };
-      void resumeContext();
+        });
     }
-
-    return () => {
-    };
   }, []);
 
-  return contextRef.current;
+  return context;
 }
 

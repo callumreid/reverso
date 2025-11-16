@@ -59,7 +59,7 @@ export function ScreenB() {
           </p>
         ) : null}
         <p className="text-center text-base text-[#f8f7ff]">
-          Pass the device to the next player once they're confident they can mimic what they heard.
+          Pass the device to the next player once they’re confident they can mimic what they heard.
         </p>
       </div>
     </ScreenFrame>

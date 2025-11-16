@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { audioBufferToWavBlob } from "@/utils/audioConversion";
 import { logError } from "@/utils/logger";
+
+interface AudioContextWindow extends Window {
+  AudioContext?: typeof AudioContext;
+  webkitAudioContext?: typeof AudioContext;
+}
 
 export interface PlayOptions {
   volume?: number;
@@ -20,14 +26,20 @@ export function useAudioPlayback() {
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   const getAudioContext = useCallback(async () => {
     if (typeof window === "undefined") {
       throw new Error("AudioContext is unavailable during SSR");
     }
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      const audioWindow = window as AudioContextWindow;
+      const AudioContextCtor =
+        audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+      if (!AudioContextCtor) {
+        throw new Error("Web Audio API is not supported in this browser");
+      }
+      audioContextRef.current = new AudioContextCtor();
     }
     const context = audioContextRef.current;
     if (context.state === "suspended") {
@@ -46,6 +58,17 @@ export function useAudioPlayback() {
     gainRef.current?.disconnect();
     sourceRef.current = null;
     gainRef.current = null;
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.currentTime = 0;
+      audioElementRef.current.src = "";
+      audioElementRef.current.onended = null;
+      audioElementRef.current.onerror = null;
+    }
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setIsPlaying(false);
   }, []);
 
@@ -82,18 +105,13 @@ export function useAudioPlayback() {
   const playWithFallback = useCallback(
     async (buffer: AudioBuffer, options: PlayOptions = {}) => {
       try {
-        const audioBuffer = buffer;
-        const wavBlob = new Blob(
-          [
-            new Uint8Array(
-              audioBuffer.getChannelData(0).buffer,
-              audioBuffer.getChannelData(0).byteOffset,
-              audioBuffer.getChannelData(0).byteLength,
-            ),
-          ],
-          { type: "audio/wav" },
-        );
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = null;
+        }
+        const wavBlob = audioBufferToWavBlob(buffer);
         const url = URL.createObjectURL(wavBlob);
+        objectUrlRef.current = url;
 
         if (!audioElementRef.current) {
           audioElementRef.current = new Audio();
@@ -107,13 +125,19 @@ export function useAudioPlayback() {
         audio.onended = () => {
           setIsPlaying(false);
           options.onEnded?.();
-          URL.revokeObjectURL(url);
+          if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
+          }
         };
 
         audio.onerror = () => {
           setError("Audio playback error");
           setIsPlaying(false);
-          URL.revokeObjectURL(url);
+          if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
+          }
         };
 
         await audio.play();
@@ -152,7 +176,7 @@ export function useAudioPlayback() {
         logError("Playback failed", playError);
       }
     },
-    [getAudioContext, stop, playWithWebAudio, playWithFallback],
+    [stop, playWithWebAudio, playWithFallback],
   );
 
   const setVolume = useCallback((value: number) => {
@@ -166,6 +190,15 @@ export function useAudioPlayback() {
     if (audioContextRef.current) {
       await audioContextRef.current.close();
       audioContextRef.current = null;
+    }
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.src = "";
+      audioElementRef.current = null;
+    }
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
     }
   }, [stop]);
 
