@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MicButton } from "@/components/MicButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
 import { WaveformVisualizer } from "@/components/WaveformVisualizer";
@@ -88,6 +88,25 @@ export function ScreenC() {
     [dispatch, handleProcessing, playScratch, reverse, setError],
   );
 
+  const handleStreamAvailable = useCallback(
+    (stream: MediaStream | null) => {
+      if (stream) {
+        void attach(stream);
+      } else {
+        detach();
+      }
+    },
+    [attach, detach],
+  );
+
+  const audioRecordingOptions = useMemo(
+    () => ({
+      onRecordingReady: handleRecordingReady,
+      onStreamAvailable: handleStreamAvailable,
+    }),
+    [handleRecordingReady, handleStreamAvailable],
+  );
+
   const {
     status,
     error,
@@ -97,16 +116,7 @@ export function ScreenC() {
     requestPermission,
     startRecording,
     stopRecording,
-  } = useAudioRecording({
-    onRecordingReady: handleRecordingReady,
-    onStreamAvailable: (stream) => {
-      if (stream) {
-        void attach(stream);
-      } else {
-        detach();
-      }
-    },
-  });
+  } = useAudioRecording(audioRecordingOptions);
 
   useEffect(() => {
     dispatch({
