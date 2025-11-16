@@ -61,10 +61,6 @@ export function useAudioPlayback() {
         source.playbackRate.value = options.playbackRate ?? 1;
         gainNode.gain.value = options.volume ?? 1;
         source.connect(gainNode).connect(context.destination);
-        source.onerror = () => {
-          setIsPlaying(false);
-          setError("Audio playback error");
-        };
         source.onended = () => {
           setIsPlaying(false);
           options.onEnded?.();
