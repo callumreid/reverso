@@ -42,10 +42,17 @@ export function useScratchSfx(customUrl?: string) {
     return new Promise<void>((resolve) => {
       const handleEnded = () => {
         audioRef.current?.removeEventListener("ended", handleEnded);
+        audioRef.current?.removeEventListener("error", handleError);
+        resolve();
+      };
+      const handleError = () => {
+        audioRef.current?.removeEventListener("ended", handleEnded);
+        audioRef.current?.removeEventListener("error", handleError);
         resolve();
       };
       audioRef.current?.addEventListener("ended", handleEnded, { once: true });
-      void audioRef.current?.play();
+      audioRef.current?.addEventListener("error", handleError, { once: true });
+      audioRef.current?.play().catch(() => resolve());
     });
   }, []);
 

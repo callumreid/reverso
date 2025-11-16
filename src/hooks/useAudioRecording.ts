@@ -261,9 +261,14 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [status, stopRecording]);
+
+  useEffect(() => {
+    return () => {
       cancelRecording();
     };
-  }, [cancelRecording, status, stopRecording]);
+  }, [cancelRecording]);
 
   return {
     status,
