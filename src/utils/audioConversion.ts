@@ -2,27 +2,24 @@ import { DEFAULT_SAMPLE_RATE } from "@/utils/audioConstants";
 
 const WAV_HEADER_SIZE = 44;
 
-const getAudioContext = () => {
-  if (typeof window === "undefined") {
-    throw new Error("AudioContext is not available during SSR");
-  }
-  return new AudioContext();
-};
-
 export async function blobToArrayBuffer(blob: Blob) {
   return blob.arrayBuffer();
 }
 
 export async function blobToAudioBuffer(blob: Blob, audioContext?: AudioContext) {
   const arrayBuffer = await blobToArrayBuffer(blob);
-  if (audioContext) {
-    return audioContext.decodeAudioData(arrayBuffer.slice(0));
+  let context = audioContext;
+  if (!context) {
+    if (typeof window === "undefined") {
+      throw new Error("AudioContext is not available during SSR");
+    }
+    context = new AudioContext();
   }
-  const context = getAudioContext();
   try {
     return await context.decodeAudioData(arrayBuffer.slice(0));
-  } finally {
-    await context.close();
+  } catch (decodeError) {
+    console.error("Failed to decode audio:", decodeError);
+    throw decodeError;
   }
 }
 
