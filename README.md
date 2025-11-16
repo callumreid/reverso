@@ -47,3 +47,6 @@ src/
 
 ## Deployment
 The app targets Vercel. Configure the project in the Vercel dashboard, add `OPENAI_API_KEY` to the Production environment, and deploy the `main` branch. The default build command (`pnpm run build`) and output directory (`.next`) work out of the box.
+
+## Analytics
+Vercel Analytics is enabled globally via the root layout. Deploying to Vercel automatically surfaces realtime traffic and engagement metrics for the live environment—no additional configuration is required.

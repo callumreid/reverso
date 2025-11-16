@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import { GameProvider } from "@/context/GameContext";
 import "./globals.css";
 
@@ -26,7 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <GameProvider>{children}</GameProvider>
+        <GameProvider>
+          {children}
+          <Analytics />
+        </GameProvider>
       </body>
     </html>
   );
