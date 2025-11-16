@@ -173,9 +173,8 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       stopRejectRef.current = reject;
       shouldEmitResultRef.current = true;
       mediaRecorderRef.current?.stop();
-      cleanupStream();
     });
-  }, [cleanupStream, status]);
+  }, [status]);
 
   const startRecording = useCallback(async () => {
     if (!hasMediaAPIs()) {
@@ -189,7 +188,6 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       const stream = await navigator.mediaDevices.getUserMedia(
         RECORDING_CONSTRAINTS,
       );
-      console.log("[useAudioRecording] Got stream:", stream.getTracks().length, "tracks");
       streamRef.current = stream;
       options.onStreamAvailable?.(stream);
       const recorder = new MediaRecorder(stream, MEDIA_RECORDER_OPTIONS);
