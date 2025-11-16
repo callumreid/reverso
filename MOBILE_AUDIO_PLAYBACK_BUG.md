@@ -65,17 +65,40 @@ The playback hook now implements:
 3. Error handlers on both paths
 4. Console logging at each step
 
-```typescript
-const playWithFallback = useCallback(
-  async (buffer: AudioBuffer, options: PlayOptions = {}) => {
-    // Converts AudioBuffer to WAV blob
-    const wavBlob = new Blob([...]);
-    const url = URL.createObjectURL(wavBlob);
-    const audio = new Audio();
-    audio.src = url;
-    await audio.play();
+```105:151:src/hooks/useAudioPlayback.ts
+const wavBlob = audioBufferToWavBlob(buffer);
+const url = URL.createObjectURL(wavBlob);
+objectUrlRef.current = url;
+
+if (!audioElementRef.current) {
+  audioElementRef.current = new Audio();
+}
+
+const audio = audioElementRef.current;
+audio.src = url;
+audio.volume = options.volume ?? 1;
+audio.playbackRate = options.playbackRate ?? 1;
+
+audio.onended = () => {
+  setIsPlaying(false);
+  options.onEnded?.();
+  if (objectUrlRef.current) {
+    URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = null;
   }
-)
+};
+
+audio.onerror = () => {
+  setError("Audio playback error");
+  setIsPlaying(false);
+  if (objectUrlRef.current) {
+    URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = null;
+  }
+};
+
+await audio.play();
+setIsPlaying(true);
 ```
 
 ## Playback Flow
