@@ -169,7 +169,6 @@ export function useAudioPlayback() {
         };
 
         audio.onerror = () => {
-          setError("Audio playback error");
           setIsPlaying(false);
           if (objectUrlRef.current) {
             URL.revokeObjectURL(objectUrlRef.current);
@@ -182,7 +181,6 @@ export function useAudioPlayback() {
         return true;
       } catch (fallbackError) {
         console.error("Fallback playback failed:", fallbackError);
-        setError("Unable to play audio on this device.");
         setIsPlaying(false);
         logError("Fallback audio playback failed", fallbackError);
         return false;
