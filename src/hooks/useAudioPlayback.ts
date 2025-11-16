@@ -11,6 +11,7 @@ export interface PlayOptions {
 
 /**
  * Provides imperative AudioContext-driven playback controls.
+ * Uses fallback to HTMLAudioElement for maximum mobile compatibility.
  */
 export function useAudioPlayback() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -18,23 +19,25 @@ export function useAudioPlayback() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   const getAudioContext = useCallback(async () => {
     if (typeof window === "undefined") {
       throw new Error("AudioContext is unavailable during SSR");
     }
     if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
+      audioContextRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
     }
-    if (audioContextRef.current.state === "suspended") {
+    const context = audioContextRef.current;
+    if (context.state === "suspended") {
       try {
-        await audioContextRef.current.resume();
+        await context.resume();
       } catch (resumeError) {
-        logError("Failed to resume AudioContext", resumeError);
-        throw new Error("Audio context could not be resumed. Try tapping the play button.");
+        console.warn("Failed to resume AudioContext, will try HTMLAudioElement", resumeError);
       }
     }
-    return audioContextRef.current;
+    return context;
   }, []);
 
   const stop = useCallback(() => {
@@ -46,14 +49,12 @@ export function useAudioPlayback() {
     setIsPlaying(false);
   }, []);
 
-  const play = useCallback(
-    async (buffer: AudioBuffer, options: PlayOptions = {}) => {
+  const playWithWebAudio = useCallback(
+    async (buffer: AudioBuffer, options: PlayOptions = {}): Promise<boolean> => {
       try {
-        setError(null);
-        stop();
         const context = await getAudioContext();
-        if (!buffer || buffer.length === 0) {
-          throw new Error("Audio buffer is empty or invalid");
+        if (context.state === "suspended") {
+          return false;
         }
         const source = context.createBufferSource();
         const gainNode = context.createGain();
@@ -69,6 +70,80 @@ export function useAudioPlayback() {
         sourceRef.current = source;
         gainRef.current = gainNode;
         setIsPlaying(true);
+        return true;
+      } catch (audioError) {
+        console.warn("Web Audio playback failed, will try fallback", audioError);
+        return false;
+      }
+    },
+    [getAudioContext],
+  );
+
+  const playWithFallback = useCallback(
+    async (buffer: AudioBuffer, options: PlayOptions = {}) => {
+      try {
+        const audioBuffer = buffer;
+        const wavBlob = new Blob(
+          [
+            new Uint8Array(
+              audioBuffer.getChannelData(0).buffer,
+              audioBuffer.getChannelData(0).byteOffset,
+              audioBuffer.getChannelData(0).byteLength,
+            ),
+          ],
+          { type: "audio/wav" },
+        );
+        const url = URL.createObjectURL(wavBlob);
+
+        if (!audioElementRef.current) {
+          audioElementRef.current = new Audio();
+        }
+
+        const audio = audioElementRef.current;
+        audio.src = url;
+        audio.volume = options.volume ?? 1;
+        audio.playbackRate = options.playbackRate ?? 1;
+
+        audio.onended = () => {
+          setIsPlaying(false);
+          options.onEnded?.();
+          URL.revokeObjectURL(url);
+        };
+
+        audio.onerror = () => {
+          setError("Audio playback error");
+          setIsPlaying(false);
+          URL.revokeObjectURL(url);
+        };
+
+        await audio.play();
+        setIsPlaying(true);
+      } catch (fallbackError) {
+        console.error("Fallback playback failed:", fallbackError);
+        setError("Unable to play audio on this device.");
+        setIsPlaying(false);
+        logError("Fallback audio playback failed", fallbackError);
+      }
+    },
+    [],
+  );
+
+  const play = useCallback(
+    async (buffer: AudioBuffer, options: PlayOptions = {}) => {
+      try {
+        setError(null);
+        stop();
+
+        if (!buffer || buffer.length === 0) {
+          throw new Error("Audio buffer is empty or invalid");
+        }
+
+        const webAudioSuccess = await playWithWebAudio(buffer, options);
+        if (webAudioSuccess) {
+          return;
+        }
+
+        await playWithFallback(buffer, options);
       } catch (playError) {
         const message =
           playError instanceof Error ? playError.message : "Unable to play audio.";
@@ -77,7 +152,7 @@ export function useAudioPlayback() {
         logError("Playback failed", playError);
       }
     },
-    [getAudioContext, stop],
+    [getAudioContext, stop, playWithWebAudio, playWithFallback],
   );
 
   const setVolume = useCallback((value: number) => {
