@@ -1,18 +1,71 @@
 @import "tailwindcss";
 
 :root {
-  --background: #05010f;
-  --foreground: #f8f7ff;
-  --glow-primary: #f489ff;
-  --glow-secondary: #8be9fd;
-  --glass: rgba(15, 0, 26, 0.6);
+  /* Core Palette */
+  --bg-void: #04010b;
+  --bg-panel: #09001c;
+  --bg-panel-alt: #080017;
+
+  --accent-primary: #ff4fcb;  /* neon magenta */
+  --accent-secondary: #5cf2ff; /* cyan */
+  --accent-tertiary: #ffe45c;  /* warm disco yellow */
+
+  --accent-danger: #ff3366;
+  --accent-success: #74ff9b;
+
+  --text-primary: #f9f6ff;
+  --text-secondary: #b0a6d9;
+  --text-muted: #6b638f;
+  --text-ghost: #3d355f;
+
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  /* Shadows & Glows */
+  --shadow-soft: 0 30px 60px rgba(0, 0, 0, 0.6);
+  --shadow-glow-magenta: 0 0 40px rgba(255, 79, 203, 0.4);
+  --shadow-glow-cyan: 0 0 40px rgba(92, 242, 255, 0.35);
+
+  /* Border Radii */
+  --radius-xl: 32px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 9999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-void: var(--bg-void);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-panel-alt: var(--bg-panel-alt);
+  
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-tertiary: var(--accent-tertiary);
+  
+  --color-accent-danger: var(--accent-danger);
+  --color-accent-success: var(--accent-success);
+  
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-ghost: var(--text-ghost);
+  
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+
+  --radius-xl: var(--radius-xl);
+  --radius-lg: var(--radius-lg);
+  --radius-md: var(--radius-md);
+  --radius-pill: var(--radius-pill);
 }
 
 * {
@@ -22,14 +75,46 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(244, 137, 255, 0.08), transparent 50%),
-    radial-gradient(circle at bottom, rgba(139, 233, 253, 0.05), transparent 55%),
-    #05010f;
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  letter-spacing: 0.01em;
+  background: radial-gradient(circle at top, #12082f, var(--bg-void) 80%);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-space-grotesk), system-ui, -apple-system, sans-serif;
 }
 
 button {
   font-family: inherit;
+}
+
+/* Animation Keyframes */
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Utilities for "chaos" elements */
+.chaos-glitch {
+  animation: glitch 3s infinite;
+}
+
+@keyframes glitch {
+  0%, 90%, 100% { transform: translate(0); }
+  92% { transform: translate(-2px, 1px); }
+  94% { transform: translate(2px, -1px); }
+  96% { transform: translate(-1px, 2px); }
+  98% { transform: translate(1px, -2px); }
 }

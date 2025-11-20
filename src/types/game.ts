@@ -1,6 +1,6 @@
 import type { Dispatch } from "react";
 
-export type GameScreen = "input" | "listenBackwards" | "tryBackwards" | "results";
+export type GameScreen = "lobby" | "input" | "listenBackwards" | "tryBackwards" | "results";
 
 export interface RecordingMetadata {
   createdAt: number;
@@ -10,6 +10,8 @@ export interface RecordingMetadata {
 
 export interface GameState {
   currentScreen: GameScreen;
+  targetPhrase: string; // The phrase the user intends to say
+  difficulty: "chill" | "tricky" | "absurd";
   originalRecording: AudioBuffer | null;
   mimicRecording: AudioBuffer | null;
   originalBackwardsBuffer: AudioBuffer | null;

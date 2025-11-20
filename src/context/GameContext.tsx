@@ -9,7 +9,9 @@ import type {
 } from "@/types/game";
 
 const initialState: GameState = {
-  currentScreen: "input",
+  currentScreen: "lobby",
+  targetPhrase: "",
+  difficulty: "chill",
   originalRecording: null,
   mimicRecording: null,
   originalBackwardsBuffer: null,
@@ -57,7 +59,7 @@ export function GameProvider({ children }: ProviderProps) {
 
   const startRound = useCallback(() => {
     dispatch({ type: "RESET_ROUND" });
-    dispatch({ type: "SET_SCREEN", payload: "input" });
+    dispatch({ type: "SET_SCREEN", payload: "lobby" });
   }, []);
 
   const nextRound = useCallback(() => {

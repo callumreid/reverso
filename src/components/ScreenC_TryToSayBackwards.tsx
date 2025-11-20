@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
-import { MicButton } from "@/components/MicButton";
-import { ScreenFrame } from "@/components/ScreenFrame";
-import { WaveformVisualizer } from "@/components/WaveformVisualizer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReversalTimelineStrip } from "@/components/ui/ReversalTimelineStrip";
+import { WaveformConsole } from "@/components/ui/WaveformConsole";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { RecordOrb } from "@/components/ui/RecordOrb";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useAudioReversal } from "@/hooks/useAudioReversal";
 import { useGameContext } from "@/hooks/useGameContext";
@@ -20,8 +21,12 @@ export function ScreenC() {
   const { play: playScratch } = useScratchSfx();
   const audioContext = useSharedAudioContext();
 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [hasRecorded, setHasRecorded] = useState(false);
+
   const handleRecordingReady = useCallback(
     async (result: { audioBuffer: AudioBuffer; durationMs: number; createdAt: number }) => {
+      setIsProcessing(true);
       try {
         const mimicForward = await reverse(result.audioBuffer);
         dispatch({
@@ -40,14 +45,15 @@ export function ScreenC() {
             },
           },
         });
-        await playScratch();
-        goToScreen("results");
+        setHasRecorded(true);
       } catch (flowError) {
         const message = flowError instanceof Error ? flowError.message : "Unable to process your attempt.";
         setError(message);
+      } finally {
+        setIsProcessing(false);
       }
     },
-    [dispatch, goToScreen, playScratch, reverse, setError, state.recordingMeta],
+    [dispatch, reverse, setError, state.recordingMeta],
   );
 
   const handleStreamAvailable = useCallback(
@@ -106,6 +112,7 @@ export function ScreenC() {
       void requestPermission();
       return;
     }
+    setHasRecorded(false);
     void startRecording();
   }, [permission, requestPermission, startRecording, status, stopRecording]);
 
@@ -114,32 +121,98 @@ export function ScreenC() {
     !recordingSupported ||
     status === "requesting" ||
     status === "stopping" ||
-    state.isProcessingRound;
+    isProcessing;
 
-  useSpacebarToggle(handleToggleRecording, !disabled);
+  useSpacebarToggle(handleToggleRecording, !disabled && !hasRecorded);
+
+  const currentAmplitude = useMemo(() => {
+     if (!waveform || !isActive || status !== "recording") return 0;
+     return Math.max(...waveform);
+  }, [waveform, isActive, status]);
+
+  // Reference samples (Original Backwards)
+  const referenceSamples = useMemo(() => {
+    const buffer = state.originalBackwardsBuffer;
+    if (!buffer) return undefined;
+    const raw = buffer.getChannelData(0);
+    const bucketSize = Math.floor(raw.length / 40);
+    const result = [];
+    for (let i = 0; i < 40; i++) {
+      const start = i * bucketSize;
+      const end = start + bucketSize;
+      let max = 0;
+      for (let j = start; j < end; j++) {
+        if (Math.abs(raw[j]) > max) max = Math.abs(raw[j]);
+      }
+      result.push(max);
+    }
+    return result;
+  }, [state.originalBackwardsBuffer]);
+
+  const handleNext = async () => {
+      await playScratch();
+      goToScreen("results");
+  };
 
   return (
-    <ScreenFrame
-      title="Try to say it backwards"
-      subtitle="Tap once (or press space) to start mimicking, then tap again to finish."
-      footer={
-        <p className="text-sm text-[#d6bcfa]">
-          Recording length: {formatDuration(durationMs)} · Permission: {permission}
-        </p>
-      }
-    >
-      <div className="flex flex-col items-center gap-6">
-        <MicButton
-          label={status === "recording" ? "Tap to stop" : "Tap to start"}
-          onClick={handleToggleRecording}
-          isActive={status === "recording"}
-          disabled={disabled}
-        />
-        <WaveformVisualizer samples={waveform} isActive={isActive && status === "recording"} />
-        <p className="text-center text-base text-[#f8f7ff]">
-          Speak confidently; articulation matters less than matching the rhythm.
+    <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+       {/* Meta */}
+       <div className="flex flex-col items-center gap-1">
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            Round 01 • Your Backwards
+        </span>
+        <h1 className="font-display text-3xl font-black uppercase tracking-wider text-white drop-shadow-[0_0_15px_var(--shadow-glow-magenta)]">
+            Try to Say It Backwards
+        </h1>
+        <p className="text-sm text-[var(--text-secondary)]">
+            Tap to record, mimic the nonsense, then tap again.
         </p>
       </div>
-    </ScreenFrame>
+
+      {/* Core */}
+      <div className="flex flex-col items-center justify-center py-4">
+        <RecordOrb 
+            isRecording={status === "recording"}
+            isProcessing={isProcessing}
+            onClick={handleToggleRecording}
+            disabled={disabled}
+            amplitude={currentAmplitude}
+        />
+      </div>
+
+      {/* Waveform Console */}
+      <WaveformConsole 
+        samples={waveform}
+        comparisonSamples={referenceSamples}
+        label={hasRecorded ? "MIMIC RECORDED" : "YOUR BACKWARDS TAKE"}
+        isActive={true}
+        isReversed={false} 
+      />
+
+      {/* Timeline */}
+      <ReversalTimelineStrip currentStep="mimic" />
+
+      {/* Footer */}
+       <div className="flex w-full flex-col items-center gap-4">
+        <p className="text-xs text-[var(--text-muted)]">
+            Tip: Match the rhythm more than the consonants.
+        </p>
+        
+        <PrimaryButton 
+            fullWidth 
+            onClick={handleNext}
+            disabled={!hasRecorded || isProcessing}
+            className={!hasRecorded ? "opacity-50 grayscale" : ""}
+        >
+            Flip it Forward
+        </PrimaryButton>
+      </div>
+
+      {!recordingSupported && (
+        <div className="text-xs text-[var(--accent-danger)]">
+            Recording not supported.
+        </div>
+      )}
+    </div>
   );
 }
