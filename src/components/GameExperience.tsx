@@ -61,7 +61,6 @@ export function GameExperience() {
           <header className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold lowercase tracking-[0.4em] text-[var(--accent-secondary)]">Reverso</p>
-              <p className="text-sm text-[var(--text-secondary)]">Round {roundLabel}</p>
             </div>
           </header>
           <TimelineStrip nodes={timelineNodes} />

@@ -48,7 +48,7 @@ export function ScreenB() {
 
   return (
     <ScreenFrame
-      metaLabel={`Round ${roundLabel} • Reversed`}
+      metaLabel="Reversed"
       title="Listen backwards"
       ghostText="Sdrawkcab Netsil"
       instructions="When you think you’ve got its rhythm, pass the device and tap READY."

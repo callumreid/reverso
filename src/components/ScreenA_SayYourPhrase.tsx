@@ -121,7 +121,7 @@ export function ScreenA() {
 
   return (
     <ScreenFrame
-      metaLabel={`Round ${roundLabel} • Original`}
+      metaLabel="Original"
       title="Say your phrase"
       subtitle="Tap to record, then speak it like you mean it."
       ghostText="ESARHP A YAS"
@@ -130,9 +130,6 @@ export function ScreenA() {
           <PrimaryButton onClick={() => goToScreen("listenBackwards")} disabled={!canAdvance}>
             said!
           </PrimaryButton>
-          <p className="text-center text-xs text-[var(--text-muted)]">
-            Recording length {formatDuration(durationMs)} · Permission {permission}
-          </p>
         </div>
       }
     >
@@ -142,6 +139,7 @@ export function ScreenA() {
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
+          timer={formatDuration(durationMs)}
         />
         <WaveformConsole
           label="Current take"

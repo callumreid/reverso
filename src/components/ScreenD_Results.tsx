@@ -65,9 +65,8 @@ export function ScreenD() {
 
   return (
     <ScreenFrame
-      metaLabel={`Round ${roundLabel} • Results`}
+      metaLabel="Results"
       title="How close were you?"
-      subtitle="Echo room unlocked. Compare every reflection."
       ghostText="?UOY EREW ESOLC WOH"
       instructions="Share this round or spin a new phrase. Weirdness loves momentum."
       footer={
@@ -83,29 +82,19 @@ export function ScreenD() {
       }
     >
       <div className="flex flex-col gap-5">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] p-4">
-            <p className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">Clips</p>
-            <div className="mt-3 flex flex-col gap-3">
-              {clips.map((clip) => (
-                <AudioClipButton
-                  key={clip.id}
-                  label={clip.label}
-                  onClick={() => handlePlay(clip)}
-                  disabled={!clip.buffer}
-                  isActive={activeClip === clip.id && isPlaying}
-                  auxiliary={clip.label.includes("backwards") ? "∞" : "▶"}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] p-4">
-            <ScoreDial score={score} />
-            <div className="mt-4 grid gap-2">
-              {metrics.map((metric) => (
-                <MetricChip key={metric.label} label={metric.label} value={metric.value} />
-              ))}
-            </div>
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] p-4">
+          <p className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">Clips</p>
+          <div className="mt-3 flex flex-col gap-3">
+            {clips.map((clip) => (
+              <AudioClipButton
+                key={clip.id}
+                label={clip.label}
+                onClick={() => handlePlay(clip)}
+                disabled={!clip.buffer}
+                isActive={activeClip === clip.id && isPlaying}
+                auxiliary={clip.label.includes("backwards") ? "∞" : "▶"}
+              />
+            ))}
           </div>
         </div>
         <PhraseDiffCard original={state.originalTranscription} mimic={state.mimicTranscription} />

@@ -123,7 +123,7 @@ export function ScreenC() {
 
   return (
     <ScreenFrame
-      metaLabel={`Round ${roundLabel} • Your Backwards`}
+      metaLabel="Your Backwards"
       title="Try to say it backwards"
       subtitle="Tap to record, mimic the nonsense, then tap again."
       ghostText="SDRAWKCAB"
@@ -133,9 +133,6 @@ export function ScreenC() {
           <PrimaryButton onClick={() => goToScreen("results")} disabled={!canAdvance}>
             Flip it forward
           </PrimaryButton>
-          <p className="text-center text-xs text-[var(--text-muted)]">
-            Recording length {formatDuration(durationMs)} · Permission {permission}
-          </p>
         </div>
       }
     >
@@ -145,6 +142,7 @@ export function ScreenC() {
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
+          timer={formatDuration(durationMs)}
         />
         <WaveformConsole
           label="Your backwards take"

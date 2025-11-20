@@ -8,6 +8,7 @@ export interface MicButtonProps {
   onClick: () => void;
   isActive?: boolean;
   disabled?: boolean;
+  timer?: string;
 }
 
 /**
@@ -18,6 +19,7 @@ export function MicButton({
   onClick,
   isActive = false,
   disabled = false,
+  timer,
 }: MicButtonProps) {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -75,16 +77,21 @@ export function MicButton({
           )}
           aria-hidden
         />
-        <span className="pointer-events-none text-center text-sm font-semibold lowercase tracking-[0.3em]">
-          {label}
+        <span className="pointer-events-none flex flex-col items-center justify-center gap-1 text-center text-sm font-semibold lowercase tracking-[0.3em]">
+          <span>{label}</span>
         </span>
         <span className="orbit-dot" style={{ top: 12, left: "50%" }} aria-hidden />
         <span className="orbit-dot" data-variant="2" style={{ bottom: 18, left: "35%" }} aria-hidden />
         <span className="orbit-dot" data-variant="3" style={{ top: 30, right: "30%" }} aria-hidden />
       </button>
-      <span className="mt-4 text-[11px] lowercase tracking-[0.3em] text-[var(--text-secondary)]">
-        {isActive ? "Press to stop" : "Press to speak"}
-      </span>
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <span className="text-[11px] lowercase tracking-[0.3em] text-[var(--text-secondary)]">
+          {isActive ? "Press to stop" : "Press to speak"}
+        </span>
+        {timer && isActive ? (
+          <span className="font-mono text-xs text-[var(--accent-secondary)]">{timer}</span>
+        ) : null}
+      </div>
     </div>
   );
 }
