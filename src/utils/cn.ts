@@ -1,18 +1,6 @@
-export function cn(
-  ...args: Array<string | false | null | undefined | Record<string, boolean>>
-) {
-  return args
-    .flatMap((arg) => {
-      if (!arg) {
-        return [];
-      }
-      if (typeof arg === "string") {
-        return [arg];
-      }
-      return Object.entries(arg)
-        .filter(([, value]) => Boolean(value))
-        .map(([key]) => key);
-    })
-    .join(" ")
-    .trim();
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }

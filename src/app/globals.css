@@ -1,35 +1,255 @@
 @import "tailwindcss";
 
 :root {
-  --background: #05010f;
-  --foreground: #f8f7ff;
-  --glow-primary: #f489ff;
-  --glow-secondary: #8be9fd;
-  --glass: rgba(15, 0, 26, 0.6);
+  --bg-void: #04010b;
+  --bg-panel: #09001c;
+  --bg-panel-alt: #080017;
+  --accent-primary: #ff4fcb;
+  --accent-secondary: #5cf2ff;
+  --accent-tertiary: #ffe45c;
+  --accent-danger: #ff3366;
+  --accent-success: #74ff9b;
+  --text-primary: #f9f6ff;
+  --text-secondary: #b0a6d9;
+  --text-muted: #6b638f;
+  --text-ghost: #3d355f;
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --shadow-soft: 0 30px 60px rgba(0, 0, 0, 0.6);
+  --shadow-glow-magenta: 0 0 40px rgba(255, 79, 203, 0.4);
+  --shadow-glow-cyan: 0 0 40px rgba(92, 242, 255, 0.35);
+  --radius-xl: 32px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-void);
+  --color-foreground: var(--text-primary);
+  --font-display: var(--font-reverso-display);
+  --font-body: var(--font-reverso-body);
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(244, 137, 255, 0.08), transparent 50%),
-    radial-gradient(circle at bottom, rgba(139, 233, 253, 0.05), transparent 55%),
-    #05010f;
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(255, 79, 203, 0.2), transparent 55%),
+    radial-gradient(circle at bottom, rgba(92, 242, 255, 0.15), transparent 60%),
+    radial-gradient(circle at center, #12082f 0%, var(--bg-void) 65%);
+  color: var(--text-primary);
+  font-family: var(--font-reverso-body), system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   letter-spacing: 0.01em;
+  background-attachment: fixed;
 }
 
-button {
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  background: linear-gradient(125deg, rgba(255, 79, 203, 0.08), transparent 40%),
+    linear-gradient(-135deg, rgba(92, 242, 255, 0.08), transparent 50%);
+  transform: scale(1.2);
+  z-index: -1;
+}
+
+body::after {
+  opacity: 0.25;
+  filter: blur(50px);
+}
+
+button,
+input,
+textarea {
   font-family: inherit;
+}
+
+:root[data-motion="reduced"] * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+::selection {
+  background: rgba(255, 79, 203, 0.35);
+  color: var(--text-primary);
+}
+
+.reverso-shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7);
+}
+
+.reverso-panel {
+  width: 100%;
+  max-width: 430px;
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  background: linear-gradient(180deg, rgba(9, 0, 28, 0.9), rgba(21, 0, 48, 0.96));
+  box-shadow:
+    inset 0 1px 0 var(--border-subtle),
+    var(--shadow-soft);
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+.reverso-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.reverso-panel::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: var(--radius-xl);
+  background: radial-gradient(circle at 30% 10%, rgba(255, 79, 203, 0.3), transparent 50%);
+  filter: blur(60px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ghost-text {
+  position: absolute;
+  inset: 10% auto auto 50%;
+  translate: -50% 0;
+  font-family: var(--font-reverso-display), "Space Grotesk", system-ui, sans-serif;
+  font-size: clamp(48px, 14vw, 96px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: var(--text-ghost);
+  opacity: 0.08;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: ghost-drift 18s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.ghost-text[data-direction="reverse"] {
+  transform: scaleX(-1);
+}
+
+.orbit-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent-secondary);
+  filter: drop-shadow(0 0 6px rgba(92, 242, 255, 0.6));
+  animation: orbit 12s linear infinite;
+}
+
+.orbit-dot[data-variant="2"] {
+  animation-duration: 18s;
+  background: var(--accent-primary);
+}
+
+.orbit-dot[data-variant="3"] {
+  animation-duration: 22s;
+  background: var(--accent-tertiary);
+}
+
+.glitchy-label {
+  position: relative;
+  display: inline-flex;
+  gap: var(--space-1);
+  text-transform: lowercase;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  animation: glitch 24s infinite;
+}
+
+@keyframes ghost-drift {
+  0% {
+    transform: translateX(0) scaleX(-1);
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.04;
+  }
+  100% {
+    transform: translateX(-8%) scaleX(-1);
+    opacity: 0.08;
+  }
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(12px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(12px) rotate(-360deg);
+  }
+}
+
+@keyframes glitch {
+  0%,
+  92% {
+    transform: translate(0, 0);
+    letter-spacing: 0.18em;
+  }
+  94% {
+    transform: translate(1px, 0);
+    letter-spacing: 0.24em;
+  }
+  96% {
+    transform: translate(-1px, 0);
+    letter-spacing: 0.15em;
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .reverso-shell {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .reverso-panel {
+    padding: var(--space-5);
+    border-radius: 28px;
+  }
 }

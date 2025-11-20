@@ -10,6 +10,7 @@ import type {
 
 const initialState: GameState = {
   currentScreen: "input",
+  roundNumber: 1,
   originalRecording: null,
   mimicRecording: null,
   originalBackwardsBuffer: null,
@@ -36,6 +37,13 @@ const reducer = (state: GameState, action: GameAction): GameState => {
     case "RESET_ROUND":
       return {
         ...initialState,
+        roundNumber: state.roundNumber,
+        microphonePermission: state.microphonePermission,
+      };
+    case "NEXT_ROUND":
+      return {
+        ...initialState,
+        roundNumber: state.roundNumber + 1,
         microphonePermission: state.microphonePermission,
       };
     default:
@@ -56,12 +64,13 @@ export function GameProvider({ children }: ProviderProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const startRound = useCallback(() => {
+    dispatch({ type: "SET_STATE", payload: { roundNumber: 1 } });
     dispatch({ type: "RESET_ROUND" });
     dispatch({ type: "SET_SCREEN", payload: "input" });
   }, []);
 
   const nextRound = useCallback(() => {
-    dispatch({ type: "RESET_ROUND" });
+    dispatch({ type: "NEXT_ROUND" });
   }, []);
 
   const goToScreen = useCallback((screen: GameScreen) => {

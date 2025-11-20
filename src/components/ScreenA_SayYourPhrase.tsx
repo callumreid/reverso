@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { MicButton } from "@/components/MicButton";
+import { PrimaryButton } from "@/components/PrimaryButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
-import { WaveformVisualizer } from "@/components/WaveformVisualizer";
+import { WaveformConsole } from "@/components/WaveformConsole";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useAudioReversal } from "@/hooks/useAudioReversal";
 import { useGameContext } from "@/hooks/useGameContext";
@@ -14,7 +15,7 @@ import { useSharedAudioContext } from "@/hooks/useSharedAudioContext";
 import { formatDuration } from "@/utils/formatDuration";
 
 export function ScreenA() {
-  const { dispatch, goToScreen, setError } = useGameContext();
+  const { state, dispatch, goToScreen, setError } = useGameContext();
   const { waveform, attach, detach, isActive } = useWaveformAnalyzer();
   const { reverse } = useAudioReversal();
   const { play: playScratch } = useScratchSfx();
@@ -22,6 +23,7 @@ export function ScreenA() {
 
   const handleRecordingReady = useCallback(
     async (result: { audioBuffer: AudioBuffer; durationMs: number; createdAt: number }) => {
+      dispatch({ type: "SET_STATE", payload: { isProcessingRound: true } });
       try {
         const reversed = await reverse(result.audioBuffer);
         dispatch({
@@ -40,13 +42,14 @@ export function ScreenA() {
           },
         });
         await playScratch();
-        goToScreen("listenBackwards");
       } catch (flowError) {
         const message = flowError instanceof Error ? flowError.message : "Unable to process recording.";
         setError(message);
+      } finally {
+        dispatch({ type: "SET_STATE", payload: { isProcessingRound: false } });
       }
     },
-    [dispatch, goToScreen, playScratch, reverse, setError],
+    [dispatch, playScratch, reverse, setError],
   );
 
   const handleStreamAvailable = useCallback(
@@ -113,26 +116,41 @@ export function ScreenA() {
 
   useSpacebarToggle(handleToggleRecording, !disabled);
 
+  const canAdvance = Boolean(state.originalBackwardsBuffer) && !state.isProcessingRound;
+  const roundLabel = String(state.roundNumber ?? 1).padStart(2, "0");
+
   return (
     <ScreenFrame
+      metaLabel={`Round ${roundLabel} • Original`}
       title="Say your phrase"
-      subtitle="Tap the mic (or press space) to start, then tap again to finish."
+      subtitle="Tap to record, then speak it like you mean it."
+      ghostText="ESARHP A YAS"
       footer={
-        <p className="text-center text-sm text-[#d6bcfa]">
-          Recording length: {formatDuration(durationMs)} · Permission: {permission}
-        </p>
+        <div className="flex flex-col gap-3">
+          <PrimaryButton onClick={() => goToScreen("listenBackwards")} disabled={!canAdvance}>
+            said!
+          </PrimaryButton>
+          <p className="text-center text-xs text-[var(--text-muted)]">
+            Recording length {formatDuration(durationMs)} · Permission {permission}
+          </p>
+        </div>
       }
     >
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-5">
         <MicButton
           label={status === "recording" ? "Tap to stop" : "Tap to start"}
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
         />
-        <WaveformVisualizer samples={waveform} isActive={isActive && status === "recording"} />
+        <WaveformConsole
+          label="Current take"
+          samples={waveform}
+          isActive={isActive && status === "recording"}
+          caption="Waveform builds as you speak"
+        />
         {supportsRecording === false ? (
-          <p className="rounded-2xl border border-[#ff5f87] bg-[#2a001a] px-4 py-3 text-sm text-[#ffb3c1]">
+          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
             Recording is not supported in this browser. Try Chrome or Safari on a device with a microphone.
           </p>
         ) : null}

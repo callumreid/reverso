@@ -11,7 +11,7 @@ export interface MicButtonProps {
 }
 
 /**
- * Toggle-style microphone control with keyboard + pointer support.
+ * Squishy neon record orb with mirrored chrome details.
  */
 export function MicButton({
   label = "Tap to record",
@@ -33,39 +33,58 @@ export function MicButton({
   );
 
   return (
-    <button
-      type="button"
-      className={cn(
-        "group relative h-40 w-40 select-none rounded-full border-4 border-[#f489ff] bg-gradient-to-br from-[#1b0025] to-[#42005b] text-white transition-all",
-        "shadow-[0_0_20px_rgba(244,137,255,0.6)]",
-        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8be9fd]",
-        {
-          "opacity-50 cursor-not-allowed": disabled,
-          "scale-95": disabled,
-          "animate-pulse border-[#8be9fd] shadow-[0_0_25px_rgba(139,233,253,0.8)]": isActive && !disabled,
-        },
-      )}
-      disabled={disabled}
-      aria-pressed={isActive}
-      onClick={() => {
-        if (!disabled) {
-          onClick();
-        }
-      }}
-      onKeyDown={handleKeyDown}
-    >
-      <span className="pointer-events-none text-center text-lg font-semibold uppercase tracking-wide">
-        {label}
-      </span>
-      <span
+    <div className="relative flex flex-col items-center">
+      <button
+        type="button"
         className={cn(
-          "pointer-events-none absolute inset-1 rounded-full border-2 border-dashed border-transparent transition-colors",
-          isActive && !disabled ? "border-[#fffb96]" : "border-[#5f2b80]",
+          "group relative flex h-40 w-40 items-center justify-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-secondary)]",
+          disabled ? "cursor-not-allowed opacity-60" : "hover:scale-105 active:scale-95",
         )}
-      />
-      <span className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.3em] text-[#d6bcfa]">
-        Space to toggle
+        disabled={disabled}
+        aria-pressed={isActive}
+        onClick={() => {
+          if (!disabled) {
+            onClick();
+          }
+        }}
+        onKeyDown={handleKeyDown}
+      >
+        <span
+          className={cn(
+            "absolute inset-0 rounded-full border-[3px] bg-[radial-gradient(circle_at_30%_20%,rgba(255,79,203,0.7),rgba(6,0,18,0.95))]",
+            "shadow-[0_0_35px_rgba(255,79,203,0.45)]",
+            isActive ? "border-[rgba(92,242,255,0.8)]" : "border-[rgba(255,79,203,0.4)]",
+          )}
+          aria-hidden
+        />
+        <span
+          className={cn(
+            "absolute inset-2 rounded-full border border-[rgba(255,255,255,0.15)]",
+            isActive && "animate-[pulse_1.4s_ease-in-out_infinite]",
+          )}
+          aria-hidden
+        />
+        <span
+          className="absolute inset-4 rounded-full bg-[linear-gradient(180deg,#15002c,#080014)] opacity-90"
+          aria-hidden
+        />
+        <span
+          className={cn(
+            "absolute inset-4 rounded-full border border-dashed border-[rgba(255,255,255,0.12)] transition-all",
+            isActive && "border-[rgba(255,228,92,0.8)]",
+          )}
+          aria-hidden
+        />
+        <span className="pointer-events-none text-center text-sm font-semibold lowercase tracking-[0.3em]">
+          {label}
+        </span>
+        <span className="orbit-dot" style={{ top: 12, left: "50%" }} aria-hidden />
+        <span className="orbit-dot" data-variant="2" style={{ bottom: 18, left: "35%" }} aria-hidden />
+        <span className="orbit-dot" data-variant="3" style={{ top: 30, right: "30%" }} aria-hidden />
+      </button>
+      <span className="mt-4 text-[11px] lowercase tracking-[0.3em] text-[var(--text-secondary)]">
+        {isActive ? "Press to stop" : "Press to speak"}
       </span>
-    </button>
+    </div>
   );
 }

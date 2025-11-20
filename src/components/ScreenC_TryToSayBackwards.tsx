@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { MicButton } from "@/components/MicButton";
+import { PrimaryButton } from "@/components/PrimaryButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
-import { WaveformVisualizer } from "@/components/WaveformVisualizer";
+import { WaveformConsole } from "@/components/WaveformConsole";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useAudioReversal } from "@/hooks/useAudioReversal";
 import { useGameContext } from "@/hooks/useGameContext";
@@ -22,6 +23,7 @@ export function ScreenC() {
 
   const handleRecordingReady = useCallback(
     async (result: { audioBuffer: AudioBuffer; durationMs: number; createdAt: number }) => {
+      dispatch({ type: "SET_STATE", payload: { isProcessingRound: true } });
       try {
         const mimicForward = await reverse(result.audioBuffer);
         dispatch({
@@ -41,13 +43,14 @@ export function ScreenC() {
           },
         });
         await playScratch();
-        goToScreen("results");
       } catch (flowError) {
         const message = flowError instanceof Error ? flowError.message : "Unable to process your attempt.";
         setError(message);
+      } finally {
+        dispatch({ type: "SET_STATE", payload: { isProcessingRound: false } });
       }
     },
-    [dispatch, goToScreen, playScratch, reverse, setError, state.recordingMeta],
+    [dispatch, playScratch, reverse, setError, state.recordingMeta],
   );
 
   const handleStreamAvailable = useCallback(
@@ -111,34 +114,50 @@ export function ScreenC() {
 
   const recordingSupported = supportsRecording !== false;
   const disabled =
-    !recordingSupported ||
-    status === "requesting" ||
-    status === "stopping" ||
-    state.isProcessingRound;
+    !recordingSupported || status === "requesting" || status === "stopping" || state.isProcessingRound;
 
   useSpacebarToggle(handleToggleRecording, !disabled);
 
+  const roundLabel = String(state.roundNumber ?? 1).padStart(2, "0");
+  const canAdvance = Boolean(state.mimicForwardBuffer) && !state.isProcessingRound;
+
   return (
     <ScreenFrame
+      metaLabel={`Round ${roundLabel} • Your Backwards`}
       title="Try to say it backwards"
-      subtitle="Tap once (or press space) to start mimicking, then tap again to finish."
+      subtitle="Tap to record, mimic the nonsense, then tap again."
+      ghostText="SDRAWKCAB"
+      instructions="Tip: match the rhythm more than the consonants. Your brain will fill the gaps."
       footer={
-        <p className="text-sm text-[#d6bcfa]">
-          Recording length: {formatDuration(durationMs)} · Permission: {permission}
-        </p>
+        <div className="flex flex-col gap-3">
+          <PrimaryButton onClick={() => goToScreen("results")} disabled={!canAdvance}>
+            Flip it forward
+          </PrimaryButton>
+          <p className="text-center text-xs text-[var(--text-muted)]">
+            Recording length {formatDuration(durationMs)} · Permission {permission}
+          </p>
+        </div>
       }
     >
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-5">
         <MicButton
           label={status === "recording" ? "Tap to stop" : "Tap to start"}
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
         />
-        <WaveformVisualizer samples={waveform} isActive={isActive && status === "recording"} />
-        <p className="text-center text-base text-[#f8f7ff]">
-          Speak confidently; articulation matters less than matching the rhythm.
-        </p>
+        <WaveformConsole
+          label="Your backwards take"
+          samples={waveform}
+          palette="magenta"
+          isActive={isActive && status === "recording"}
+          caption="Overlay shows the remembered cadence"
+        />
+        {!recordingSupported ? (
+          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
+            Recording is not supported in this browser.
+          </p>
+        ) : null}
       </div>
     </ScreenFrame>
   );

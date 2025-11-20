@@ -7,16 +7,18 @@ export interface AudioClipButtonProps {
   onClick: () => void;
   isActive?: boolean;
   disabled?: boolean;
+  auxiliary?: string;
 }
 
 /**
- * Styled button used for audio playback controls on the results screen.
+ * Disco console row used for clip playback in the results view.
  */
 export function AudioClipButton({
   label,
   onClick,
   isActive = false,
   disabled = false,
+  auxiliary,
 }: AudioClipButtonProps) {
   return (
     <button
@@ -24,13 +26,34 @@ export function AudioClipButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-full rounded-2xl border border-[#5f2b80] bg-[#170028] px-4 py-3 text-left text-base font-medium text-white transition",
-        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8be9fd]",
-        isActive && "border-[#8be9fd] bg-[#240046] shadow-[0_0_15px_rgba(139,233,253,0.4)]",
+        "group flex w-full items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(10,0,24,0.85)] px-4 py-3 text-left text-base text-[var(--text-primary)] transition",
+        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-secondary)]",
+        isActive && "border-[var(--accent-secondary)] shadow-[var(--shadow-glow-cyan)]",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >
-      {label}
+      <span
+        className={cn(
+          "flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(255,255,255,0.2)] text-sm lowercase tracking-[0.3em]",
+          isActive ? "bg-[rgba(92,242,255,0.15)]" : "bg-transparent",
+        )}
+      >
+        ▶
+      </span>
+      <div className="flex flex-1 flex-col">
+        <span className="font-semibold">{label}</span>
+        <span className="mt-1 flex h-2 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
+          <span
+            className={cn(
+              "inline-block h-full w-full origin-left scale-x-0 bg-gradient-to-r from-[var(--accent-secondary)] to-[var(--accent-primary)] transition-transform duration-700 group-hover:scale-x-100",
+              isActive && "scale-x-100",
+            )}
+          />
+        </span>
+      </div>
+      {auxiliary ? (
+        <span className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">{auxiliary}</span>
+      ) : null}
     </button>
   );
 }

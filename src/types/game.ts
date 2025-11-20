@@ -10,6 +10,7 @@ export interface RecordingMetadata {
 
 export interface GameState {
   currentScreen: GameScreen;
+  roundNumber: number;
   originalRecording: AudioBuffer | null;
   mimicRecording: AudioBuffer | null;
   originalBackwardsBuffer: AudioBuffer | null;
@@ -33,7 +34,8 @@ export interface GameState {
 export type GameAction =
   | { type: "SET_SCREEN"; payload: GameScreen }
   | { type: "SET_STATE"; payload: Partial<GameState> }
-  | { type: "RESET_ROUND" };
+  | { type: "RESET_ROUND" }
+  | { type: "NEXT_ROUND" };
 
 export interface GameContextValue {
   state: GameState;
