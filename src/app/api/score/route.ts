@@ -65,7 +65,8 @@ export async function POST(request: Request) {
     const maxLen = Math.max(original.length, mimic.length);
     const distance = levenshtein(original, mimic);
     const similarity = Math.max(0, 1 - distance / maxLen);
-    return NextResponse.json({ score: Math.round(similarity * 100) });
+    const curved = Math.pow(similarity, 0.6);
+    return NextResponse.json({ score: Math.min(100, Math.round(curved * 100)) });
   } catch (error) {
     return NextResponse.json(
       { error: "Unable to score", detail: error instanceof Error ? error.message : String(error) },

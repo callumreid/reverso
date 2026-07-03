@@ -10,6 +10,7 @@ export interface WaveformConsoleProps {
   palette?: WaveformPalette;
   isActive?: boolean;
   caption?: string;
+  compact?: boolean;
 }
 
 /**
@@ -22,6 +23,7 @@ export function WaveformConsole({
   palette = "magenta",
   isActive = false,
   caption,
+  compact = false,
 }: WaveformConsoleProps) {
   const primaryBars = useMemo(() => buildBars(samples), [samples]);
   const overlayBars = useMemo(() => buildBars(overlaySamples), [overlaySamples]);
@@ -31,6 +33,31 @@ export function WaveformConsole({
       : palette === "dual"
         ? "from-[rgba(92,242,255,0.8)] via-[rgba(255,79,203,0.8)] to-[rgba(255,228,92,0.6)]"
         : "from-[rgba(255,79,203,0.85)] to-[rgba(255,79,203,0.3)]";
+
+  if (compact) {
+    return (
+      <div className="flex w-full flex-col items-center gap-1">
+        <div
+          className={cn(
+            "flex h-10 w-full items-end gap-[2px] px-1 transition-opacity",
+            isActive ? "opacity-100" : "opacity-70",
+          )}
+          aria-hidden
+        >
+          {primaryBars.map((value, index) => (
+            <span
+              key={`bar-${index}`}
+              className={cn("w-full min-w-[2px] flex-1 rounded-full bg-gradient-to-b", paletteClass)}
+              style={{ height: `${Math.max(8, value * 100)}%` }}
+            />
+          ))}
+        </div>
+        {caption ? (
+          <p className="text-xs lowercase tracking-[0.2em] text-[var(--text-muted)]">{caption}</p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div

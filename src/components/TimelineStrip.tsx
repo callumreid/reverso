@@ -64,7 +64,7 @@ function StepIcon({ type }: { type: string }) {
 
 export function TimelineStrip({ nodes }: TimelineStripProps) {
   return (
-    <div className="relative flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[rgba(8,0,23,0.85)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="relative flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[rgba(8,0,23,0.85)] px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       {nodes.map((node, index) => {
         const nextNode = nodes[index + 1];
         const connector = index < nodes.length - 1;
@@ -88,7 +88,7 @@ export function TimelineStrip({ nodes }: TimelineStripProps) {
             <div className="flex flex-col items-center gap-2 text-center">
               <div
                 className={cn(
-                  "flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300",
+                  "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
                   statusClasses[node.status],
                   node.status === "current" && "animate-[pulse_2.4s_ease-in-out_infinite]",
                 )}

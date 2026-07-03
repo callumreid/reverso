@@ -5,7 +5,6 @@ import { MicButton } from "@/components/MicButton";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
 import { WaveformConsole } from "@/components/WaveformConsole";
-import { WelcomeDemo } from "@/components/WelcomeDemo";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useAudioReversal } from "@/hooks/useAudioReversal";
 import { useGameContext } from "@/hooks/useGameContext";
@@ -132,37 +131,39 @@ export function ScreenA() {
 
   return (
     <ScreenFrame
-      metaLabel="Original"
+      metaLabel="Player 1"
       title="Say your phrase"
-      subtitle="Tap to record, then speak it like you mean it. Up to 10 seconds."
+      subtitle="Something short and punchy."
       ghostText="ESARHP A YAS"
-      instructions={<WelcomeDemo />}
       footer={
-        <div className="flex flex-col gap-3">
-          <PrimaryButton onClick={() => goToScreen("listenBackwards")} disabled={!canAdvance}>
-            {state.isProcessingRound ? "reversing…" : "said!"}
-          </PrimaryButton>
-        </div>
+        <PrimaryButton
+          onClick={() => goToScreen("listenBackwards")}
+          disabled={!canAdvance}
+          className="w-full text-base"
+        >
+          {state.isProcessingRound ? "reversing…" : "said it! → pass the phone"}
+        </PrimaryButton>
       }
     >
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-3">
         <MicButton
-          label={status === "recording" ? "Tap to stop" : hasTake ? "Redo take" : "Tap to start"}
+          label={status === "recording" ? "tap to stop" : hasTake ? "redo take" : "tap to record"}
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
           timer={formatDuration(durationMs)}
         />
-        <WaveformConsole
-          label="Current take"
-          samples={waveform}
-          isActive={isActive && status === "recording"}
-          caption={
-            hasTake && status !== "recording"
-              ? "Take locked in — hit SAID! or record again."
-              : "Waveform builds as you speak"
-          }
-        />
+        {status === "recording" ? (
+          <WaveformConsole
+            label="Current take"
+            samples={waveform}
+            isActive={isActive}
+            compact
+          />
+        ) : null}
+        {hasTake && status !== "recording" ? (
+          <p className="text-base text-[var(--accent-success)]">Take locked in ✓</p>
+        ) : null}
         {supportsRecording === false ? (
           <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
             Recording is not supported in this browser. Try Chrome or Safari on a device with a microphone.

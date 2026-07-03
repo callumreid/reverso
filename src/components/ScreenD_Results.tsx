@@ -18,27 +18,106 @@ interface ClipConfig {
 
 const SHARE_URL = "https://reverso.lol";
 
+type RevealPhase = "original" | "reveal" | "done";
+
 export function ScreenD() {
   const { state, dispatch, nextRound } = useGameContext();
   const { play, stop, isPlaying, error: playbackError } = useAudioPlayback();
   const [activeClip, setActiveClip] = useState<string | null>(null);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const [revealPhase, setRevealPhase] = useState<RevealPhase>("original");
+  const revealStartedRef = useRef(false);
+  const revealAbortedRef = useRef(false);
+  const leavingRef = useRef(false);
 
   const clips = useMemo<ClipConfig[]>(
     () => [
-      { id: "mimic-forward", label: "The reveal: mimic flipped forward", buffer: state.mimicForwardBuffer },
       { id: "original-forward", label: "Original phrase", buffer: state.originalRecording },
+      { id: "mimic-forward", label: "The reveal: mimic flipped forward", buffer: state.mimicForwardBuffer },
       { id: "original-backwards", label: "Original, backwards", buffer: state.originalBackwardsBuffer },
       { id: "mimic-backwards", label: "Mimic, as spoken", buffer: state.mimicRecording },
     ],
     [state.mimicForwardBuffer, state.mimicRecording, state.originalBackwardsBuffer, state.originalRecording],
   );
 
+  const playOnce = useCallback(
+    (buffer: AudioBuffer) =>
+      new Promise<boolean>((resolve) => {
+        let settled = false;
+        let failsafe: ReturnType<typeof setTimeout> | null = null;
+        const settle = (value: boolean) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if (failsafe !== null) {
+            clearTimeout(failsafe);
+          }
+          resolve(value);
+        };
+        void play(buffer, { onEnded: () => settle(true) }).then((started) => {
+          if (!started) {
+            settle(false);
+            return;
+          }
+          failsafe = setTimeout(() => settle(true), buffer.duration * 1000 + 2500);
+        });
+      }),
+    [play],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const aborted = () => cancelled || revealAbortedRef.current;
+    const timer = setTimeout(async () => {
+      if (revealStartedRef.current || aborted()) {
+        return;
+      }
+      revealStartedRef.current = true;
+      const original = state.originalRecording;
+      const reveal = state.mimicForwardBuffer;
+      if (!original || !reveal) {
+        setRevealPhase("done");
+        return;
+      }
+      setActiveClip("original-forward");
+      const playedOriginal = await playOnce(original);
+      if (aborted()) {
+        return;
+      }
+      if (!playedOriginal) {
+        setActiveClip(null);
+        setRevealPhase("done");
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 450));
+      if (aborted()) {
+        return;
+      }
+      setRevealPhase("reveal");
+      setActiveClip("mimic-forward");
+      await playOnce(reveal);
+      if (aborted()) {
+        return;
+      }
+      setActiveClip(null);
+      setRevealPhase("done");
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // Runs once on mount with the buffers present at arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePlay = useCallback(
     (clip: ClipConfig) => {
       if (!clip.buffer) {
         return;
       }
+      revealAbortedRef.current = true;
+      setRevealPhase("done");
       setActiveClip(clip.id);
       void play(clip.buffer, {
         onEnded: () => {
@@ -49,12 +128,12 @@ export function ScreenD() {
     [play],
   );
 
-  const leavingRef = useRef(false);
   const handleNextRound = useCallback(() => {
     if (leavingRef.current) {
       return;
     }
     leavingRef.current = true;
+    revealAbortedRef.current = true;
     stop();
     nextRound();
   }, [nextRound, stop]);
@@ -104,28 +183,40 @@ export function ScreenD() {
   }, [state.score]);
 
   const metrics = state.score !== null ? buildMetrics(state.score) : null;
+  const revealBanner =
+    revealPhase === "original"
+      ? "▶ the original phrase…"
+      : revealPhase === "reveal"
+        ? "▶ …and the mimic, flipped forward:"
+        : null;
 
   return (
     <ScreenFrame
       metaLabel="Results"
-      title="How close were you?"
+      title="The reveal"
       ghostText="?UOY EREW ESOLC WOH"
-      instructions="Play the reveal out loud, then pass the phone and run it back."
       footer={
-        <div className="flex flex-col gap-3">
-          <PrimaryButton onClick={handleNextRound}>Next round</PrimaryButton>
+        <div className="flex flex-col gap-2">
+          <PrimaryButton onClick={handleNextRound} className="w-full text-base">
+            next round
+          </PrimaryButton>
           <button
             type="button"
             onClick={handleShare}
-            className="text-sm lowercase tracking-[0.3em] text-[var(--accent-secondary)] underline-offset-4 hover:underline"
+            className="min-h-[44px] text-base lowercase tracking-[0.2em] text-[var(--accent-secondary)] underline-offset-4 hover:underline"
           >
             {shareFeedback ?? "share this game"}
           </button>
         </div>
       }
     >
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col gap-4">
+        {revealBanner ? (
+          <p className="text-center text-base font-semibold text-[var(--accent-tertiary)]" aria-live="polite">
+            {revealBanner}
+          </p>
+        ) : null}
+        <div className="flex flex-col items-center gap-3">
           {scoringPhase === "done" ? (
             <>
               <ScoreDial score={state.score} />
@@ -139,47 +230,44 @@ export function ScreenD() {
             </>
           ) : null}
           {scoringPhase === "pending" ? (
-            <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <span className="vinyl-disc vinyl-spinning h-14 w-14 rounded-full border border-[rgba(255,255,255,0.12)]" aria-hidden />
+            <div className="flex flex-col items-center gap-2 py-3 text-center">
+              <span className="vinyl-disc vinyl-spinning h-12 w-12 rounded-full border border-[rgba(255,255,255,0.12)]" aria-hidden />
               <p className="text-sm lowercase tracking-[0.2em] text-[var(--text-secondary)]">
                 decoding the chaos…
               </p>
             </div>
           ) : null}
           {scoringPhase === "error" ? (
-            <div className="flex w-full flex-col items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] px-4 py-5 text-center">
-              <p className="text-sm text-[var(--text-secondary)]">
-                Scoring is offline right now — the clips below still tell the truth.
+            <div className="flex w-full flex-col items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] px-4 py-4 text-center">
+              <p className="text-base text-[var(--text-secondary)]">
+                Scoring is offline — the clips still tell the truth.
               </p>
               <button
                 type="button"
                 onClick={handleRetryScoring}
-                className="rounded-[var(--radius-pill)] border border-[var(--accent-secondary)] px-6 py-2 text-sm font-semibold lowercase tracking-[0.3em] text-[var(--accent-secondary)] transition hover:bg-[rgba(92,242,255,0.1)]"
+                className="min-h-[44px] rounded-[var(--radius-pill)] border border-[var(--accent-secondary)] px-6 text-sm font-semibold lowercase tracking-[0.2em] text-[var(--accent-secondary)] transition hover:bg-[rgba(92,242,255,0.1)]"
               >
                 retry scoring
               </button>
             </div>
           ) : null}
         </div>
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] p-4">
-          <p className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">Clips</p>
-          <div className="mt-3 flex flex-col gap-3">
-            {clips.map((clip) => (
-              <AudioClipButton
-                key={clip.id}
-                label={clip.label}
-                onClick={() => handlePlay(clip)}
-                disabled={!clip.buffer}
-                isActive={activeClip === clip.id && isPlaying && !playbackError}
-              />
-            ))}
-          </div>
-          {playbackError ? (
-            <p className="mt-3 rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-xs text-[var(--accent-danger)]">
-              {playbackError}
-            </p>
-          ) : null}
+        <div className="flex flex-col gap-2">
+          {clips.map((clip) => (
+            <AudioClipButton
+              key={clip.id}
+              label={clip.label}
+              onClick={() => handlePlay(clip)}
+              disabled={!clip.buffer}
+              isActive={activeClip === clip.id && isPlaying && !playbackError}
+            />
+          ))}
         </div>
+        {playbackError ? (
+          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-xs text-[var(--accent-danger)]">
+            {playbackError}
+          </p>
+        ) : null}
         {scoringPhase === "done" || state.originalTranscription || state.mimicTranscription ? (
           <PhraseDiffCard original={state.originalTranscription} mimic={state.mimicTranscription} />
         ) : null}

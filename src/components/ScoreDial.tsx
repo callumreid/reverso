@@ -60,10 +60,10 @@ function useCountUp(target: number) {
 }
 
 function getDescriptor(value: number) {
-  if (value >= 81) {
+  if (value >= 85) {
     return "Uncanny";
   }
-  if (value >= 41) {
+  if (value >= 55) {
     return "Pretty Convincing";
   }
   return "Pure Chaos";

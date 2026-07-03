@@ -17,6 +17,7 @@ export function useScratchSfx(customUrl?: string) {
     }
     const audio = new Audio(targetUrl);
     audio.preload = "auto";
+    audio.volume = 0.35;
     const handleReady = () => {
       setIsLoaded(true);
     };

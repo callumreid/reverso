@@ -146,35 +146,48 @@ export function ScreenC() {
 
   return (
     <ScreenFrame
-      metaLabel="Your Backwards"
-      title="Try to say it backwards"
-      subtitle="Tap to record, mimic the nonsense, then tap again."
+      metaLabel="Player 2"
+      title="Say the gibberish"
+      subtitle="Match the rhythm — your brain fills the gaps."
       ghostText="SDRAWKCAB"
-      instructions="Tip: match the rhythm more than the consonants. Your brain will fill the gaps."
       footer={
-        <div className="flex flex-col gap-3">
-          <PrimaryButton onClick={() => goToScreen("results")} disabled={!canAdvance}>
-            {state.isProcessingRound ? "flipping…" : "Flip it forward"}
-          </PrimaryButton>
-        </div>
+        <PrimaryButton
+          onClick={() => goToScreen("results")}
+          disabled={!canAdvance}
+          className="w-full text-base"
+        >
+          {state.isProcessingRound ? "flipping…" : "flip it forward!"}
+        </PrimaryButton>
       }
     >
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-3">
         <MicButton
-          label={status === "recording" ? "Tap to stop" : hasTake ? "Redo take" : "Tap to start"}
+          label={status === "recording" ? "tap to stop" : hasTake ? "redo take" : "tap to record"}
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
           timer={formatDuration(durationMs)}
         />
-        <WaveformConsole
-          label="Your backwards take"
-          samples={waveform}
-          overlaySamples={targetSamples}
-          palette="magenta"
-          isActive={isActive && status === "recording"}
-          caption="Cyan ghost bars show the shape you're chasing"
-        />
+        {status === "recording" ? (
+          <WaveformConsole
+            label="Your backwards take"
+            samples={waveform}
+            palette="magenta"
+            isActive={isActive}
+            compact
+          />
+        ) : (
+          <WaveformConsole
+            label="Target rhythm"
+            samples={targetSamples}
+            palette="cyan"
+            compact
+            caption="the shape you're chasing"
+          />
+        )}
+        {hasTake && status !== "recording" ? (
+          <p className="text-base text-[var(--accent-success)]">Take locked in ✓</p>
+        ) : null}
         {!recordingSupported ? (
           <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
             Recording is not supported in this browser.

@@ -193,7 +193,7 @@ export function useAudioPlayback() {
   );
 
   const play = useCallback(
-    async (buffer: AudioBuffer, options: PlayOptions = {}) => {
+    async (buffer: AudioBuffer, options: PlayOptions = {}): Promise<boolean> => {
       try {
         setError(null);
         stop();
@@ -211,13 +211,13 @@ export function useAudioPlayback() {
           if (attempt === "html") {
             const success = await playWithFallback(buffer, options);
             if (success) {
-              return;
+              return true;
             }
             continue;
           }
           const success = await playWithWebAudio(buffer, options);
           if (success) {
-            return;
+            return true;
           }
         }
         throw new Error("Unable to play audio on this device.");
@@ -227,6 +227,7 @@ export function useAudioPlayback() {
         setError(message);
         setIsPlaying(false);
         logError("Playback failed", playError);
+        return false;
       }
     },
     [stop, playWithWebAudio, playWithFallback, determineShouldUseHtmlAudio],
