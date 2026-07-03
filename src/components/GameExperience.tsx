@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { TimelineStrip, timelineSteps, type TimelineNode } from "@/components/TimelineStrip";
 import { ScreenA } from "@/components/ScreenA_SayYourPhrase";
 import { ScreenB } from "@/components/ScreenB_ListenBackwards";
 import { ScreenC } from "@/components/ScreenC_TryToSayBackwards";
 import { ScreenD } from "@/components/ScreenD_Results";
 import { useGameContext } from "@/hooks/useGameContext";
-import { cn } from "@/utils/cn";
+import { useRoundScoring } from "@/hooks/useRoundScoring";
 
 const screenComponents = {
   input: <ScreenA />,
@@ -25,6 +26,7 @@ const screenToStep = {
 
 export function GameExperience() {
   const { state, setError } = useGameContext();
+  useRoundScoring();
 
   const timelineNodes = useMemo(() => {
     const completion = {
@@ -59,9 +61,10 @@ export function GameExperience() {
       <div className="reverso-panel">
         <div className="relative z-10 flex flex-col gap-6">
           <header className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold lowercase tracking-[0.4em] text-[var(--accent-secondary)]">Reverso</p>
-            </div>
+            <p className="text-xs font-semibold lowercase tracking-[0.4em] text-[var(--accent-secondary)]">Reverso</p>
+            <p className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 py-1 text-[10px] lowercase tracking-[0.3em] text-[var(--text-secondary)]">
+              round {roundLabel}
+            </p>
           </header>
           <TimelineStrip nodes={timelineNodes} />
           {state.lastError ? (
@@ -76,7 +79,17 @@ export function GameExperience() {
               </button>
             </div>
           ) : null}
-          {screenComponents[state.currentScreen]}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`${state.roundNonce}-${state.currentScreen}`}
+              initial={{ opacity: 0, x: 32 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -32 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              {screenComponents[state.currentScreen]}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>

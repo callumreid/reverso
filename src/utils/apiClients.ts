@@ -2,28 +2,29 @@ import { audioBufferToBase64 } from "@/utils/audioConversion";
 
 const API_TIMEOUT_MS = 45_000;
 
-async function withTimeout<T>(promise: Promise<T>) {
-  return Promise.race<T>([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out")), API_TIMEOUT_MS);
-    }),
-  ]);
-}
-
 async function postJson<T>(url: string, body: unknown) {
-  const response = await withTimeout(
-    fetch(url, {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }),
-  );
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Request failed (${response.status}): ${detail}`);
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(`Request failed (${response.status}): ${detail}`);
+    }
+    return (await response.json()) as T;
+  } catch (requestError) {
+    if (requestError instanceof DOMException && requestError.name === "AbortError") {
+      throw new Error("Request timed out");
+    }
+    throw requestError;
+  } finally {
+    clearTimeout(timeout);
   }
-  return (await response.json()) as T;
 }
 
 export async function transcribeAudioBuffer(buffer: AudioBuffer) {

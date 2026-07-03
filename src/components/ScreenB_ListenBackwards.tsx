@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
 import { WaveformConsole } from "@/components/WaveformConsole";
@@ -13,45 +13,78 @@ export function ScreenB() {
   const { play, stop, isPlaying, error } = useAudioPlayback();
   const [autoLoop, setAutoLoop] = useState(false);
   const autoLoopRef = useRef(autoLoop);
+  const loopTimeoutRef = useRef<number | null>(null);
+  const replayRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     autoLoopRef.current = autoLoop;
   }, [autoLoop]);
 
+  const clipSamples = useMemo(() => {
+    const buffer = state.originalBackwardsBuffer;
+    if (!buffer) {
+      return [];
+    }
+    const channel = buffer.getChannelData(0);
+    const step = Math.max(1, Math.floor(channel.length / 480));
+    const samples: number[] = [];
+    for (let i = 0; i < channel.length; i += step) {
+      samples.push(channel[i]);
+    }
+    return samples;
+  }, [state.originalBackwardsBuffer]);
+
+  const clearLoopTimeout = useCallback(() => {
+    if (loopTimeoutRef.current !== null) {
+      window.clearTimeout(loopTimeoutRef.current);
+      loopTimeoutRef.current = null;
+    }
+  }, []);
+
   const handlePlay = useCallback(() => {
     if (!state.originalBackwardsBuffer) {
       return;
     }
+    clearLoopTimeout();
     void play(state.originalBackwardsBuffer, {
       onEnded: () => {
         if (autoLoopRef.current) {
-          setTimeout(() => {
-            handlePlay();
-          }, 200);
+          loopTimeoutRef.current = window.setTimeout(() => {
+            replayRef.current();
+          }, 250);
         }
       },
     });
-  }, [play, state.originalBackwardsBuffer]);
+  }, [clearLoopTimeout, play, state.originalBackwardsBuffer]);
+
+  useEffect(() => {
+    replayRef.current = handlePlay;
+  }, [handlePlay]);
+
+  const handleStop = useCallback(() => {
+    clearLoopTimeout();
+    stop();
+  }, [clearLoopTimeout, stop]);
 
   const handleReady = useCallback(() => {
-    stop();
+    handleStop();
     goToScreen("tryBackwards");
-  }, [goToScreen, stop]);
+  }, [goToScreen, handleStop]);
 
   useEffect(() => {
     return () => {
+      clearLoopTimeout();
       stop();
     };
-  }, [stop]);
-
-  const roundLabel = String(state.roundNumber ?? 1).padStart(2, "0");
+  }, [clearLoopTimeout, stop]);
 
   return (
     <ScreenFrame
       metaLabel="Reversed"
       title="Listen backwards"
+      subtitle="Player 2, this one's for your ears."
       ghostText="Sdrawkcab Netsil"
-      instructions="When you think you’ve got its rhythm, pass the device and tap READY."
+      instructions="Replay it as many times as you need. When you've got its rhythm, keep the phone and hit READY."
       footer={
         <PrimaryButton onClick={handleReady} disabled={!state.originalBackwardsBuffer}>
           Ready to mimic
@@ -62,17 +95,18 @@ export function ScreenB() {
         <WaveformConsole
           label="Backwards playback"
           palette="cyan"
+          samples={clipSamples}
           isActive={isPlaying}
         />
         <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-              onClick={isPlaying ? stop : handlePlay}
+              onClick={isPlaying ? handleStop : handlePlay}
               disabled={!state.originalBackwardsBuffer}
-              className="rounded-[var(--radius-pill)] border border-[var(--accent-secondary)] px-6 py-2 text-sm font-semibold lowercase tracking-[0.3em] text-[var(--accent-secondary)] transition hover:bg-[rgba(92,242,255,0.1)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-[var(--radius-pill)] border border-[var(--accent-secondary)] px-6 py-3 text-sm font-semibold lowercase tracking-[0.3em] text-[var(--accent-secondary)] transition hover:bg-[rgba(92,242,255,0.1)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {isPlaying ? "Pause" : "Play"}
+              {isPlaying ? "Stop" : "Play"}
             </button>
             <label className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
               <span>Auto loop</span>
@@ -80,10 +114,12 @@ export function ScreenB() {
                 type="button"
                 onClick={() => setAutoLoop((prev) => !prev)}
                 className={cnToggle(autoLoop)}
+                role="switch"
+                aria-checked={autoLoop}
               >
                 <span
-                  className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform"
-                  style={{ transform: `translateX(${autoLoop ? 16 : 0}px)` }}
+                  className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform"
+                  style={{ transform: `translateX(${autoLoop ? 24 : 0}px)` }}
                 />
               </button>
             </label>
@@ -101,7 +137,7 @@ export function ScreenB() {
 
 function cnToggle(active: boolean) {
   return cn(
-    "relative h-5 w-10 rounded-full border border-[var(--border-subtle)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-secondary)]",
+    "relative h-8 w-14 rounded-full border border-[var(--border-subtle)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-secondary)]",
     active ? "bg-[var(--accent-secondary)]" : "bg-[rgba(8,0,23,0.6)]",
   );
 }

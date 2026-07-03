@@ -1,16 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { cn } from "@/utils/cn";
 
 export interface ScoreDialProps {
   score: number | null;
 }
 
+const COUNT_UP_DURATION_MS = 1200;
+
 /**
- * Circular gauge summarizing the round score.
+ * Circular gauge summarizing the round score, counting up on reveal.
  */
 export function ScoreDial({ score }: ScoreDialProps) {
   const safeScore = Math.max(0, Math.min(100, score ?? 0));
+  const displayed = useCountUp(safeScore);
   const descriptor = getDescriptor(safeScore);
-  const gradient = `conic-gradient(from -90deg, rgba(255,79,203,0.9) 0% ${safeScore}%, rgba(255,255,255,0.05) ${safeScore}% 100%)`;
+  const gradient = `conic-gradient(from -90deg, rgba(255,79,203,0.9) 0% ${displayed}%, rgba(255,255,255,0.05) ${displayed}% 100%)`;
 
   return (
     <div className="relative flex flex-col items-center">
@@ -22,7 +28,7 @@ export function ScoreDial({ score }: ScoreDialProps) {
         />
         <div className="relative z-10 flex h-32 w-32 flex-col items-center justify-center rounded-full bg-[rgba(4,1,11,0.85)] text-center">
           <span className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">Score</span>
-          <span className="text-4xl font-bold text-[var(--text-primary)]">{safeScore}</span>
+          <span className="text-4xl font-bold text-[var(--text-primary)]">{displayed}</span>
           <span className="text-sm text-[var(--text-secondary)]">/ 100</span>
         </div>
         <span className="pointer-events-none absolute inset-4 rounded-full border border-[rgba(255,255,255,0.08)]" />
@@ -30,6 +36,27 @@ export function ScoreDial({ score }: ScoreDialProps) {
       <p className="mt-4 text-sm font-semibold lowercase tracking-[0.18em] text-[var(--accent-tertiary)]">{descriptor}</p>
     </div>
   );
+}
+
+function useCountUp(target: number) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    let raf: number;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / COUNT_UP_DURATION_MS);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) {
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+
+  return value;
 }
 
 function getDescriptor(value: number) {

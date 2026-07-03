@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "reverso",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "next", "dev"],
+      "autoPort": true
+    }
+  ]
+}

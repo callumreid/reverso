@@ -1,10 +1,10 @@
 import { cn } from "@/utils/cn";
 
 export const timelineSteps = [
-  { id: "original", label: "Original", icon: "play" },
-  { id: "reversed", label: "Reversed", icon: "rewind" },
-  { id: "mimic", label: "Your Backwards", icon: "mic" },
-  { id: "forward", label: "Your Forward", icon: "spark" },
+  { id: "original", label: "Say", icon: "play" },
+  { id: "reversed", label: "Hear", icon: "rewind" },
+  { id: "mimic", label: "Mimic", icon: "mic" },
+  { id: "forward", label: "Reveal", icon: "spark" },
 ] as const;
 
 export type TimelineStepId = (typeof timelineSteps)[number]["id"];

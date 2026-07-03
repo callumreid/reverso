@@ -7,7 +7,12 @@ interface ScoreRequestBody {
   mimicTranscription?: string;
 }
 
-const normalize = (value: string | undefined) => value?.trim().toLowerCase() ?? "";
+const normalize = (value: string | undefined) =>
+  value
+    ?.toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim() ?? "";
 
 const levenshtein = (a: string, b: string) => {
   if (a === b) {
@@ -36,15 +41,28 @@ const levenshtein = (a: string, b: string) => {
   return matrix[b.length][a.length];
 };
 
+const MAX_TRANSCRIPTION_CHARS = 2_000;
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as ScoreRequestBody;
+    let body: ScoreRequestBody;
+    try {
+      body = (await request.json()) as ScoreRequestBody;
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    if (
+      (body.originalTranscription?.length ?? 0) > MAX_TRANSCRIPTION_CHARS ||
+      (body.mimicTranscription?.length ?? 0) > MAX_TRANSCRIPTION_CHARS
+    ) {
+      return NextResponse.json({ error: "Transcription too long" }, { status: 413 });
+    }
     const original = normalize(body.originalTranscription);
     const mimic = normalize(body.mimicTranscription);
-    const maxLen = Math.max(original.length, mimic.length);
-    if (!maxLen) {
-      return NextResponse.json({ score: 100 });
+    if (!original.length || !mimic.length) {
+      return NextResponse.json({ score: 0 });
     }
+    const maxLen = Math.max(original.length, mimic.length);
     const distance = levenshtein(original, mimic);
     const similarity = Math.max(0, 1 - distance / maxLen);
     return NextResponse.json({ score: Math.round(similarity * 100) });

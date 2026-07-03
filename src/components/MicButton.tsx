@@ -21,6 +21,16 @@ export function MicButton({
   disabled = false,
   timer,
 }: MicButtonProps) {
+  const handleActivate = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(30);
+    }
+    onClick();
+  }, [disabled, onClick]);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>) => {
       if (disabled) {
@@ -28,10 +38,11 @@ export function MicButton({
       }
       if (event.key === " " || event.key === "Enter") {
         event.preventDefault();
-        onClick();
+        event.stopPropagation();
+        handleActivate();
       }
     },
-    [disabled, onClick],
+    [disabled, handleActivate],
   );
 
   return (
@@ -44,11 +55,7 @@ export function MicButton({
         )}
         disabled={disabled}
         aria-pressed={isActive}
-        onClick={() => {
-          if (!disabled) {
-            onClick();
-          }
-        }}
+        onClick={handleActivate}
         onKeyDown={handleKeyDown}
       >
         <span
@@ -67,7 +74,10 @@ export function MicButton({
           aria-hidden
         />
         <span
-          className="absolute inset-4 rounded-full bg-[linear-gradient(180deg,#15002c,#080014)] opacity-90"
+          className={cn(
+            "vinyl-disc absolute inset-4 rounded-full opacity-95",
+            isActive && "vinyl-spinning",
+          )}
           aria-hidden
         />
         <span
@@ -77,20 +87,23 @@ export function MicButton({
           )}
           aria-hidden
         />
-        <span className="pointer-events-none flex flex-col items-center justify-center gap-1 text-center text-sm font-semibold lowercase tracking-[0.3em]">
+        <span className="pointer-events-none relative z-10 flex flex-col items-center justify-center gap-1 text-center text-sm font-semibold lowercase tracking-[0.3em] text-[var(--text-primary)]">
           <span>{label}</span>
         </span>
         <span className="orbit-dot" style={{ top: 12, left: "50%" }} aria-hidden />
         <span className="orbit-dot" data-variant="2" style={{ bottom: 18, left: "35%" }} aria-hidden />
         <span className="orbit-dot" data-variant="3" style={{ top: 30, right: "30%" }} aria-hidden />
       </button>
-      <div className="mt-4 flex flex-col items-center gap-1">
-        <span className="text-[11px] lowercase tracking-[0.3em] text-[var(--text-secondary)]">
-          {isActive ? "Press to stop" : "Press to speak"}
-        </span>
+      <div className="mt-4 flex h-6 flex-col items-center justify-center">
         {timer && isActive ? (
-          <span className="font-mono text-xs text-[var(--accent-secondary)]">{timer}</span>
-        ) : null}
+          <span className="font-mono text-sm text-[var(--accent-secondary)]" aria-live="polite">
+            {timer} <span className="text-[var(--text-muted)]">/ 0:10</span>
+          </span>
+        ) : (
+          <span className="text-[11px] lowercase tracking-[0.3em] text-[var(--text-muted)]">
+            10 seconds max
+          </span>
+        )}
       </div>
     </div>
   );

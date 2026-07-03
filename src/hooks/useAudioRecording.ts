@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MAX_RECORDING_DURATION_MS,
-  MEDIA_RECORDER_OPTIONS,
+  pickMediaRecorderOptions,
   RECORDING_CONSTRAINTS,
 } from "@/utils/audioConstants";
 import { blobToAudioBuffer } from "@/utils/audioConversion";
@@ -32,6 +32,26 @@ export interface UseAudioRecordingOptions {
 
 const DEFAULT_ERROR_MESSAGE = "Recording is not supported in this environment.";
 
+const describeMicError = (error: unknown) => {
+  if (error instanceof DOMException) {
+    switch (error.name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+      case "SecurityError":
+        return "Microphone access is blocked. Allow the mic for this site in your browser settings, then try again.";
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        return "No microphone was found on this device.";
+      case "NotReadableError":
+      case "TrackStartError":
+        return "The microphone is busy in another app. Close it and try again.";
+      default:
+        break;
+    }
+  }
+  return error instanceof Error && error.message ? error.message : DEFAULT_ERROR_MESSAGE;
+};
+
 const hasMediaAPIs = () =>
   typeof navigator !== "undefined" &&
   typeof navigator.mediaDevices !== "undefined" &&
@@ -58,9 +78,15 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
   const stopRejectRef = useRef<((error: unknown) => void) | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | number | null>(null);
   const shouldEmitResultRef = useRef(true);
+  const recorderMimeTypeRef = useRef<string>("");
+  const startingRef = useRef(false);
 
   useEffect(() => {
-    setSupportsRecording(hasMediaAPIs());
+    const supported = hasMediaAPIs();
+    setSupportsRecording(supported);
+    if (!supported && typeof window !== "undefined" && window.isSecureContext === false) {
+      setError("Reverso needs a secure (https) connection to use the microphone.");
+    }
   }, []);
 
   const cleanupStream = useCallback(() => {
@@ -89,7 +115,7 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       cleanupStream();
       mediaRecorderRef.current = null;
       const blob = new Blob(chunksRef.current, {
-        type: MEDIA_RECORDER_OPTIONS.mimeType,
+        type: recorderMimeTypeRef.current || "audio/webm",
       });
       chunksRef.current = [];
       if (!shouldEmitResultRef.current) {
@@ -98,6 +124,12 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
         stopResolveRef.current = null;
         stopRejectRef.current = null;
         setStatus("idle");
+        return;
+      }
+      if (durationSnapshotRef.current < 400 || blob.size < 512) {
+        setError("That take was too short — tap, speak, then tap again.");
+        setStatus("idle");
+        stopResolveRef.current?.(null);
         return;
       }
       const audioBuffer = await blobToAudioBuffer(blob, options.audioContext);
@@ -111,10 +143,10 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       setStatus("idle");
       stopResolveRef.current?.(result);
     } catch (recorderError) {
-      const message = recorderError instanceof Error ? recorderError.message : DEFAULT_ERROR_MESSAGE;
-      setError(message);
-      setStatus("error");
-      stopRejectRef.current?.(recorderError);
+      logError("Failed to process recording", recorderError);
+      setError("Couldn't process that take — try recording again.");
+      setStatus("idle");
+      stopResolveRef.current?.(null);
     } finally {
       stopResolveRef.current = null;
       stopRejectRef.current = null;
@@ -148,11 +180,7 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       setStatus("idle");
       return true;
     } catch (permissionError) {
-      const message =
-        permissionError instanceof Error
-          ? permissionError.message
-          : DEFAULT_ERROR_MESSAGE;
-      setError(message);
+      setError(describeMicError(permissionError));
       setPermission("denied");
       setStatus("error");
       logError("Microphone permission denied", permissionError);
@@ -161,20 +189,21 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
   }, []);
 
   const stopRecording = useCallback(() => {
-    if (!mediaRecorderRef.current) {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
       return Promise.resolve<RecordingResult | null>(null);
     }
-    if (status !== "recording" && status !== "requesting") {
-      return Promise.resolve<RecordingResult | null>(null);
+    if (durationStartRef.current) {
+      durationSnapshotRef.current = performance.now() - durationStartRef.current;
     }
     setStatus("stopping");
     return new Promise<RecordingResult | null>((resolve, reject) => {
       stopResolveRef.current = resolve;
       stopRejectRef.current = reject;
       shouldEmitResultRef.current = true;
-      mediaRecorderRef.current?.stop();
+      recorder.stop();
     });
-  }, [status]);
+  }, []);
 
   const startRecording = useCallback(async () => {
     if (!hasMediaAPIs()) {
@@ -182,15 +211,25 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       setStatus("error");
       return false;
     }
+    if (startingRef.current || mediaRecorderRef.current) {
+      return false;
+    }
+    startingRef.current = true;
     try {
       setStatus("requesting");
       setError(null);
       const stream = await navigator.mediaDevices.getUserMedia(
         RECORDING_CONSTRAINTS,
       );
+      if (typeof document !== "undefined" && document.hidden) {
+        stream.getTracks().forEach((track) => track.stop());
+        setStatus("idle");
+        return false;
+      }
       streamRef.current = stream;
       options.onStreamAvailable?.(stream);
-      const recorder = new MediaRecorder(stream, MEDIA_RECORDER_OPTIONS);
+      const recorder = new MediaRecorder(stream, pickMediaRecorderOptions());
+      recorderMimeTypeRef.current = recorder.mimeType;
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
       recorder.ondataavailable = (event) => {
@@ -201,6 +240,7 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       recorder.onstop = handleRecorderStop;
       recorder.onerror = (event) => {
         const message = event.error?.message ?? DEFAULT_ERROR_MESSAGE;
+        shouldEmitResultRef.current = false;
         setError(message);
         setStatus("error");
         logError("Recorder error", message);
@@ -218,17 +258,36 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
       }, limit);
       return true;
     } catch (startError) {
-      const message =
-        startError instanceof Error ? startError.message : DEFAULT_ERROR_MESSAGE;
-      setError(message);
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        shouldEmitResultRef.current = false;
+        try {
+          recorder.stop();
+        } catch {
+          logError("Failed to stop recorder after start error");
+        }
+      }
+      mediaRecorderRef.current = null;
+      resetDurationTicker();
+      cleanupStream();
+      setError(describeMicError(startError));
       setStatus("error");
-      setPermission("denied");
+      if (
+        startError instanceof DOMException &&
+        (startError.name === "NotAllowedError" || startError.name === "PermissionDeniedError")
+      ) {
+        setPermission("denied");
+      }
       logError("Unable to start recording", startError);
       return false;
+    } finally {
+      startingRef.current = false;
     }
   }, [
+    cleanupStream,
     handleRecorderStop,
     options,
+    resetDurationTicker,
     stopRecording,
     tickDuration,
   ]);
@@ -237,7 +296,10 @@ export function useAudioRecording(options: UseAudioRecordingOptions = {}) {
     resetDurationTicker();
     chunksRef.current = [];
     shouldEmitResultRef.current = false;
-    mediaRecorderRef.current?.stop();
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
     cleanupStream();
     setStatus("idle");
   }, [cleanupStream, resetDurationTicker]);

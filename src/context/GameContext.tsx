@@ -11,13 +11,17 @@ import type {
 const initialState: GameState = {
   currentScreen: "input",
   roundNumber: 1,
+  roundNonce: 0,
   originalRecording: null,
   mimicRecording: null,
   originalBackwardsBuffer: null,
   mimicForwardBuffer: null,
   originalTranscription: null,
   mimicTranscription: null,
+  originalTranscriptionStatus: "idle",
+  mimicTranscriptionStatus: "idle",
   score: null,
+  scoreStatus: "idle",
   isRecording: false,
   isPlayingAudio: false,
   recordingSFXPlayed: false,
@@ -34,16 +38,23 @@ const reducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, currentScreen: action.payload };
     case "SET_STATE":
       return { ...state, ...action.payload };
+    case "SET_ROUND_STATE":
+      if (action.nonce !== state.roundNonce) {
+        return state;
+      }
+      return { ...state, ...action.payload };
     case "RESET_ROUND":
       return {
         ...initialState,
         roundNumber: state.roundNumber,
+        roundNonce: state.roundNonce + 1,
         microphonePermission: state.microphonePermission,
       };
     case "NEXT_ROUND":
       return {
         ...initialState,
         roundNumber: state.roundNumber + 1,
+        roundNonce: state.roundNonce + 1,
         microphonePermission: state.microphonePermission,
       };
     default:

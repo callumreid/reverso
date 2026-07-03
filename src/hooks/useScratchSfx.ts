@@ -40,19 +40,23 @@ export function useScratchSfx(customUrl?: string) {
     }
     audioRef.current.currentTime = 0;
     return new Promise<void>((resolve) => {
-      const handleEnded = () => {
-        audioRef.current?.removeEventListener("ended", handleEnded);
-        audioRef.current?.removeEventListener("error", handleError);
+      let settled = false;
+      const settle = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        audioRef.current?.removeEventListener("ended", settle);
+        audioRef.current?.removeEventListener("error", settle);
+        clearTimeout(failsafe);
         resolve();
       };
-      const handleError = () => {
-        audioRef.current?.removeEventListener("ended", handleEnded);
-        audioRef.current?.removeEventListener("error", handleError);
-        resolve();
-      };
-      audioRef.current?.addEventListener("ended", handleEnded, { once: true });
-      audioRef.current?.addEventListener("error", handleError, { once: true });
-      audioRef.current?.play().catch(() => resolve());
+      // A stalled download (or a codec the browser rejects without firing
+      // "error") can leave play() pending forever — never block gameplay on it.
+      const failsafe = setTimeout(settle, 2_500);
+      audioRef.current?.addEventListener("ended", settle, { once: true });
+      audioRef.current?.addEventListener("error", settle, { once: true });
+      audioRef.current?.play().catch(() => settle());
     });
   }, []);
 

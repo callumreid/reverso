@@ -17,6 +17,20 @@ import { formatDuration } from "@/utils/formatDuration";
 export function ScreenC() {
   const { state, dispatch, goToScreen, setError } = useGameContext();
   const { waveform, attach, detach, isActive } = useWaveformAnalyzer();
+
+  const targetSamples = useMemo(() => {
+    const buffer = state.originalBackwardsBuffer;
+    if (!buffer) {
+      return [];
+    }
+    const channel = buffer.getChannelData(0);
+    const step = Math.max(1, Math.floor(channel.length / 480));
+    const samples: number[] = [];
+    for (let i = 0; i < channel.length; i += step) {
+      samples.push(channel[i]);
+    }
+    return samples;
+  }, [state.originalBackwardsBuffer]);
   const { reverse } = useAudioReversal();
   const { play: playScratch } = useScratchSfx();
   const audioContext = useSharedAudioContext();
@@ -31,6 +45,10 @@ export function ScreenC() {
           payload: {
             mimicRecording: result.audioBuffer,
             mimicForwardBuffer: mimicForward,
+            mimicTranscription: null,
+            mimicTranscriptionStatus: "idle",
+            score: null,
+            scoreStatus: "idle",
             lastError: null,
             recordingMeta: {
               ...state.recordingMeta,
@@ -42,7 +60,7 @@ export function ScreenC() {
             },
           },
         });
-        await playScratch();
+        void playScratch();
       } catch (flowError) {
         const message = flowError instanceof Error ? flowError.message : "Unable to process your attempt.";
         setError(message);
@@ -105,12 +123,17 @@ export function ScreenC() {
       void stopRecording();
       return;
     }
+    setError(null);
     if (permission === "denied") {
-      void requestPermission();
+      void requestPermission().then((granted) => {
+        if (granted) {
+          void startRecording();
+        }
+      });
       return;
     }
     void startRecording();
-  }, [permission, requestPermission, startRecording, status, stopRecording]);
+  }, [permission, requestPermission, setError, startRecording, status, stopRecording]);
 
   const recordingSupported = supportsRecording !== false;
   const disabled =
@@ -118,8 +141,8 @@ export function ScreenC() {
 
   useSpacebarToggle(handleToggleRecording, !disabled);
 
-  const roundLabel = String(state.roundNumber ?? 1).padStart(2, "0");
-  const canAdvance = Boolean(state.mimicForwardBuffer) && !state.isProcessingRound;
+  const hasTake = Boolean(state.mimicForwardBuffer);
+  const canAdvance = hasTake && !state.isProcessingRound && status !== "recording";
 
   return (
     <ScreenFrame
@@ -131,14 +154,14 @@ export function ScreenC() {
       footer={
         <div className="flex flex-col gap-3">
           <PrimaryButton onClick={() => goToScreen("results")} disabled={!canAdvance}>
-            Flip it forward
+            {state.isProcessingRound ? "flipping…" : "Flip it forward"}
           </PrimaryButton>
         </div>
       }
     >
       <div className="flex flex-col items-center gap-5">
         <MicButton
-          label={status === "recording" ? "Tap to stop" : "Tap to start"}
+          label={status === "recording" ? "Tap to stop" : hasTake ? "Redo take" : "Tap to start"}
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
@@ -147,9 +170,10 @@ export function ScreenC() {
         <WaveformConsole
           label="Your backwards take"
           samples={waveform}
+          overlaySamples={targetSamples}
           palette="magenta"
           isActive={isActive && status === "recording"}
-          caption="Overlay shows the remembered cadence"
+          caption="Cyan ghost bars show the shape you're chasing"
         />
         {!recordingSupported ? (
           <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">

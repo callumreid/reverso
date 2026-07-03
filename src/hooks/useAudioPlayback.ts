@@ -72,7 +72,7 @@ export function useAudioPlayback() {
       audioContextRef.current = new AudioContextCtor();
     }
     const context = audioContextRef.current;
-    if (context.state === "suspended") {
+    if (context.state !== "running") {
       try {
         await context.resume();
       } catch (resumeError) {
@@ -83,6 +83,9 @@ export function useAudioPlayback() {
   }, []);
 
   const stop = useCallback(() => {
+    if (sourceRef.current) {
+      sourceRef.current.onended = null;
+    }
     sourceRef.current?.stop();
     sourceRef.current?.disconnect();
     gainRef.current?.disconnect();
@@ -106,7 +109,7 @@ export function useAudioPlayback() {
     async (buffer: AudioBuffer, options: PlayOptions = {}): Promise<boolean> => {
       try {
         const context = await getAudioContext();
-        if (context.state === "suspended") {
+        if (context.state !== "running") {
           return false;
         }
         const source = context.createBufferSource();

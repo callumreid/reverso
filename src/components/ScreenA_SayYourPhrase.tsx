@@ -5,6 +5,7 @@ import { MicButton } from "@/components/MicButton";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ScreenFrame } from "@/components/ScreenFrame";
 import { WaveformConsole } from "@/components/WaveformConsole";
+import { WelcomeDemo } from "@/components/WelcomeDemo";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { useAudioReversal } from "@/hooks/useAudioReversal";
 import { useGameContext } from "@/hooks/useGameContext";
@@ -31,6 +32,10 @@ export function ScreenA() {
           payload: {
             originalRecording: result.audioBuffer,
             originalBackwardsBuffer: reversed,
+            originalTranscription: null,
+            originalTranscriptionStatus: "idle",
+            score: null,
+            scoreStatus: "idle",
             recordingMeta: {
               original: {
                 createdAt: result.createdAt,
@@ -41,7 +46,7 @@ export function ScreenA() {
             lastError: null,
           },
         });
-        await playScratch();
+        void playScratch();
       } catch (flowError) {
         const message = flowError instanceof Error ? flowError.message : "Unable to process recording.";
         setError(message);
@@ -104,38 +109,45 @@ export function ScreenA() {
       void stopRecording();
       return;
     }
+    setError(null);
     if (permission === "denied") {
-      void requestPermission();
+      void requestPermission().then((granted) => {
+        if (granted) {
+          void startRecording();
+        }
+      });
       return;
     }
     void startRecording();
-  }, [permission, requestPermission, startRecording, status, stopRecording]);
+  }, [permission, requestPermission, setError, startRecording, status, stopRecording]);
 
   const recordingSupported = supportsRecording !== false;
-  const disabled = !recordingSupported || status === "requesting" || status === "stopping";
+  const disabled =
+    !recordingSupported || status === "requesting" || status === "stopping" || state.isProcessingRound;
 
   useSpacebarToggle(handleToggleRecording, !disabled);
 
-  const canAdvance = Boolean(state.originalBackwardsBuffer) && !state.isProcessingRound;
-  const roundLabel = String(state.roundNumber ?? 1).padStart(2, "0");
+  const hasTake = Boolean(state.originalBackwardsBuffer);
+  const canAdvance = hasTake && !state.isProcessingRound && status !== "recording";
 
   return (
     <ScreenFrame
       metaLabel="Original"
       title="Say your phrase"
-      subtitle="Tap to record, then speak it like you mean it."
+      subtitle="Tap to record, then speak it like you mean it. Up to 10 seconds."
       ghostText="ESARHP A YAS"
+      instructions={<WelcomeDemo />}
       footer={
         <div className="flex flex-col gap-3">
           <PrimaryButton onClick={() => goToScreen("listenBackwards")} disabled={!canAdvance}>
-            said!
+            {state.isProcessingRound ? "reversing…" : "said!"}
           </PrimaryButton>
         </div>
       }
     >
       <div className="flex flex-col items-center gap-5">
         <MicButton
-          label={status === "recording" ? "Tap to stop" : "Tap to start"}
+          label={status === "recording" ? "Tap to stop" : hasTake ? "Redo take" : "Tap to start"}
           onClick={handleToggleRecording}
           isActive={status === "recording"}
           disabled={disabled}
@@ -145,7 +157,11 @@ export function ScreenA() {
           label="Current take"
           samples={waveform}
           isActive={isActive && status === "recording"}
-          caption="Waveform builds as you speak"
+          caption={
+            hasTake && status !== "recording"
+              ? "Take locked in — hit SAID! or record again."
+              : "Waveform builds as you speak"
+          }
         />
         {supportsRecording === false ? (
           <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">

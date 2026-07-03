@@ -9,17 +9,23 @@ export async function blobToArrayBuffer(blob: Blob) {
 export async function blobToAudioBuffer(blob: Blob, audioContext?: AudioContext) {
   const arrayBuffer = await blobToArrayBuffer(blob);
   let context = audioContext;
+  let ownsContext = false;
   if (!context) {
     if (typeof window === "undefined") {
       throw new Error("AudioContext is not available during SSR");
     }
     context = new AudioContext();
+    ownsContext = true;
   }
   try {
     return await context.decodeAudioData(arrayBuffer.slice(0));
   } catch (decodeError) {
     console.error("Failed to decode audio:", decodeError);
     throw decodeError;
+  } finally {
+    if (ownsContext) {
+      void context.close().catch(() => undefined);
+    }
   }
 }
 
