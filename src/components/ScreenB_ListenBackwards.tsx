@@ -152,7 +152,7 @@ export function ScreenB() {
           </label>
         </div>
         {error ? (
-          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
+          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[var(--bg-danger)] px-4 py-3 text-sm text-[var(--accent-danger)]">
             {error}
           </p>
         ) : null}
@@ -164,6 +164,6 @@ export function ScreenB() {
 function cnToggle(active: boolean) {
   return cn(
     "relative h-8 w-14 rounded-full border border-[var(--border-subtle)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent-secondary)]",
-    active ? "bg-[var(--accent-secondary)]" : "bg-[rgba(8,0,23,0.6)]",
+    active ? "bg-[var(--accent-secondary)]" : "bg-[rgba(30,18,62,0.7)]",
   );
 }

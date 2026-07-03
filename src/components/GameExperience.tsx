@@ -63,14 +63,14 @@ export function GameExperience() {
         <div className="relative z-10 flex flex-col gap-4">
           <header className="flex items-center justify-between gap-4">
             <p className="text-xs font-semibold lowercase tracking-[0.4em] text-[var(--accent-secondary)]">Reverso</p>
-            <p className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 py-1 text-[10px] lowercase tracking-[0.3em] text-[var(--text-secondary)]">
+            <p className="rounded-[var(--radius-pill)] border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold lowercase tracking-[0.25em] text-[var(--text-secondary)]">
               round {roundLabel}
             </p>
           </header>
           {state.currentScreen === "input" ? <WelcomeDemo /> : null}
           <TimelineStrip nodes={timelineNodes} />
           {state.lastError ? (
-            <div className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
+            <div className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[var(--bg-danger)] px-4 py-3 text-sm text-[var(--accent-danger)]">
               {state.lastError}
               <button
                 type="button"

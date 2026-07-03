@@ -175,7 +175,7 @@ export function WelcomeDemo() {
   const busy = phase !== "idle";
 
   return (
-    <div className="flex min-h-[48px] items-center gap-2 rounded-[var(--radius-lg)] border border-[rgba(92,242,255,0.35)] bg-[rgba(6,10,28,0.9)] py-1 pl-3 pr-1">
+    <div className="flex min-h-[48px] items-center gap-2 rounded-[var(--radius-lg)] border border-[rgba(92,242,255,0.35)] bg-[var(--bg-card)] py-1 pl-3 pr-1">
       <p className="min-w-0 flex-1 truncate text-sm text-[var(--text-secondary)]">
         <span className="font-semibold text-[var(--text-primary)]">“say your phrase”</span> works backwards —
       </p>

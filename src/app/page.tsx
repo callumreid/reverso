@@ -58,7 +58,7 @@ export default function Home() {
         aria-label="How to play Reverso"
         className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-6 pb-12"
       >
-        <details className="group rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(8,0,23,0.7)]">
+        <details className="group rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-card)]">
           <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between px-4 text-base font-semibold lowercase tracking-[0.2em] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] [&::-webkit-details-marker]:hidden">
             how to play
             <span className="text-[var(--accent-secondary)] transition-transform group-open:rotate-180" aria-hidden>

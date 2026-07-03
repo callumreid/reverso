@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --bg-void: #04010b;
-  --bg-panel: #09001c;
-  --bg-panel-alt: #080017;
+  --bg-void: #1d1240;
+  --bg-panel: #2c1c58;
+  --bg-panel-alt: #291a51;
+  --bg-card: rgba(22, 13, 48, 0.5);
+  --bg-danger: rgba(96, 24, 54, 0.6);
   --accent-primary: #ff4fcb;
   --accent-secondary: #5cf2ff;
   --accent-tertiary: #ffe45c;
-  --accent-danger: #ff3366;
+  --accent-danger: #ff5b84;
   --accent-success: #74ff9b;
-  --text-primary: #f9f6ff;
-  --text-secondary: #b0a6d9;
-  --text-muted: #6b638f;
-  --text-ghost: #3d355f;
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --text-primary: #fbf9ff;
+  --text-secondary: #d3cbee;
+  --text-muted: #a89ed1;
+  --text-ghost: #7a6fae;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.3);
   --shadow-soft: 0 30px 60px rgba(0, 0, 0, 0.6);
   --shadow-glow-magenta: 0 0 40px rgba(255, 79, 203, 0.4);
   --shadow-glow-cyan: 0 0 40px rgba(92, 242, 255, 0.35);
@@ -45,14 +47,18 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 17px;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at top, rgba(255, 79, 203, 0.2), transparent 55%),
-    radial-gradient(circle at bottom, rgba(92, 242, 255, 0.15), transparent 60%),
-    radial-gradient(circle at center, #12082f 0%, var(--bg-void) 65%);
+    radial-gradient(circle at top, rgba(255, 79, 203, 0.28), transparent 55%),
+    radial-gradient(circle at bottom, rgba(92, 242, 255, 0.22), transparent 60%),
+    radial-gradient(circle at center, #3a2670 0%, var(--bg-void) 70%);
   color: var(--text-primary);
   font-family: var(--font-reverso-body), system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   letter-spacing: 0.01em;
@@ -123,7 +129,7 @@ button {
   max-width: 430px;
   border-radius: var(--radius-xl);
   padding: var(--space-5);
-  background: linear-gradient(180deg, rgba(9, 0, 28, 0.9), rgba(21, 0, 48, 0.96));
+  background: linear-gradient(180deg, rgba(52, 34, 100, 0.92), rgba(64, 42, 118, 0.96));
   box-shadow:
     inset 0 1px 0 var(--border-subtle),
     var(--shadow-soft);
@@ -185,17 +191,17 @@ button {
     ),
     radial-gradient(
       circle at center,
-      rgba(6, 0, 16, 0.95) 0 2.5%,
-      rgba(255, 79, 203, 0.55) 3% 8.5%,
-      rgba(6, 0, 16, 0.98) 9% 13%,
+      rgba(24, 14, 52, 0.95) 0 2.5%,
+      rgba(255, 79, 203, 0.6) 3% 8.5%,
+      rgba(24, 14, 52, 0.98) 9% 13%,
       transparent 13.5%
     ),
     repeating-radial-gradient(
       circle at center,
-      rgba(255, 255, 255, 0.05) 0 1px,
+      rgba(255, 255, 255, 0.07) 0 1px,
       rgba(0, 0, 0, 0) 1px 5px
     ),
-    linear-gradient(180deg, #14002a, #070012);
+    linear-gradient(180deg, #2c1a58, #1d1140);
 }
 
 .vinyl-spinning {
@@ -236,7 +242,7 @@ button {
   display: inline-flex;
   gap: var(--space-1);
   text-transform: lowercase;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.18em;
   color: var(--text-secondary);
   animation: glitch 24s infinite;

@@ -238,7 +238,7 @@ export function ScreenD() {
             </div>
           ) : null}
           {scoringPhase === "error" ? (
-            <div className="flex w-full flex-col items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] px-4 py-4 text-center">
+            <div className="flex w-full flex-col items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-4 text-center">
               <p className="text-base text-[var(--text-secondary)]">
                 Scoring is offline — the clips still tell the truth.
               </p>
@@ -264,7 +264,7 @@ export function ScreenD() {
           ))}
         </div>
         {playbackError ? (
-          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-xs text-[var(--accent-danger)]">
+          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[var(--bg-danger)] px-4 py-3 text-xs text-[var(--accent-danger)]">
             {playbackError}
           </p>
         ) : null}

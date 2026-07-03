@@ -12,7 +12,7 @@ export function PhraseDiffCard({ original, mimic }: PhraseDiffCardProps) {
   const diff = useMemo(() => buildDiff(original ?? "", mimic ?? ""), [original, mimic]);
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(6,0,18,0.8)] p-4 text-sm">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 text-sm">
       <div className="flex flex-col gap-4">
         <div>
           <p className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">Original</p>

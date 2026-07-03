@@ -165,7 +165,7 @@ export function ScreenA() {
           <p className="text-base text-[var(--accent-success)]">Take locked in ✓</p>
         ) : null}
         {supportsRecording === false ? (
-          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[rgba(35,0,18,0.8)] px-4 py-3 text-sm text-[var(--accent-danger)]">
+          <p className="rounded-[var(--radius-md)] border border-[var(--accent-danger)] bg-[var(--bg-danger)] px-4 py-3 text-sm text-[var(--accent-danger)]">
             Recording is not supported in this browser. Try Chrome or Safari on a device with a microphone.
           </p>
         ) : null}

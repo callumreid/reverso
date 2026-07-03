@@ -16,7 +16,7 @@ export interface ScreenFrameProps {
 export function ScreenFrame({ metaLabel, title, subtitle, ghostText, instructions, children, footer }: ScreenFrameProps) {
   return (
     <section className="relative flex flex-col gap-4">
-      <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[rgba(8,0,23,0.85)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         {ghostText ? (
           <span className="ghost-text" data-direction="reverse" aria-hidden>
             {ghostText}

@@ -72,7 +72,7 @@ export function WaveformConsole({
           {label.split("").reverse().join("")}
         </span>
       </div>
-      <div className="relative mt-3 flex h-20 items-end gap-[2px] rounded-[var(--radius-md)] bg-[rgba(2,0,10,0.8)] px-3 py-4">
+      <div className="relative mt-3 flex h-20 items-end gap-[2px] rounded-[var(--radius-md)] bg-[rgba(24,14,52,0.8)] px-3 py-4">
         {primaryBars.map((value, index) => (
           <span
             key={`primary-${index}`}

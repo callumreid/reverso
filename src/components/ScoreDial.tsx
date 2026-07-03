@@ -26,7 +26,7 @@ export function ScoreDial({ score }: ScoreDialProps) {
           style={{ background: gradient }}
           aria-hidden
         />
-        <div className="relative z-10 flex h-32 w-32 flex-col items-center justify-center rounded-full bg-[rgba(4,1,11,0.85)] text-center">
+        <div className="relative z-10 flex h-32 w-32 flex-col items-center justify-center rounded-full bg-[rgba(30,18,62,0.9)] text-center">
           <span className="text-xs lowercase tracking-[0.3em] text-[var(--text-secondary)]">Score</span>
           <span className="text-4xl font-bold text-[var(--text-primary)]">{displayed}</span>
           <span className="text-sm text-[var(--text-secondary)]">/ 100</span>
@@ -78,7 +78,7 @@ export interface MetricChipProps {
 export function MetricChip({ label, value, max = 3 }: MetricChipProps) {
   const bars = Array.from({ length: max }, (_, index) => index < value);
   return (
-    <div className="flex items-center justify-between rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[rgba(12,0,24,0.7)] px-4 py-2 text-xs lowercase tracking-[0.2em] text-[var(--text-secondary)]">
+    <div className="flex items-center justify-between rounded-[var(--radius-pill)] border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-2 text-xs lowercase tracking-[0.2em] text-[var(--text-secondary)]">
       <span>{label}</span>
       <div className="flex gap-1">
         {bars.map((filled, index) => (

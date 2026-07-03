@@ -72,7 +72,7 @@ export function MicButton({
       >
         <span
           className={cn(
-            "absolute inset-0 rounded-full border-[3px] bg-[radial-gradient(circle_at_30%_20%,rgba(255,79,203,0.7),rgba(6,0,18,0.95))]",
+            "absolute inset-0 rounded-full border-[3px] bg-[radial-gradient(circle_at_30%_20%,rgba(255,79,203,0.7),rgba(28,17,58,0.95))]",
             "shadow-[0_0_35px_rgba(255,79,203,0.45)]",
             isActive ? "border-[rgba(92,242,255,0.8)]" : "border-[rgba(255,79,203,0.4)]",
           )}
@@ -92,7 +92,7 @@ export function MicButton({
           )}
           aria-hidden
         />
-        <span className="pointer-events-none relative z-10 flex flex-col items-center justify-center gap-1.5 rounded-full bg-[rgba(4,0,12,0.55)] px-5 py-4 text-center">
+        <span className="pointer-events-none relative z-10 flex flex-col items-center justify-center gap-1.5 rounded-full bg-[rgba(24,14,52,0.5)] px-5 py-4 text-center">
           <MicIcon active={isActive} />
           <span className="text-base font-bold lowercase tracking-[0.1em] text-[var(--text-primary)]">
             {label}
@@ -102,7 +102,7 @@ export function MicButton({
               {timer} / 0:10
             </span>
           ) : (
-            <span className="text-[10px] lowercase tracking-[0.2em] text-[var(--text-muted)]">
+            <span className="text-xs lowercase tracking-[0.15em] text-[var(--text-secondary)]">
               up to 10s
             </span>
           )}
